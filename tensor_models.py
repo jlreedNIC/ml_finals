@@ -1,12 +1,11 @@
-from learning3d.models import PointNet
-import h5py as hp
-import numpy as np
-import torch.utils as tu
+
+
 import torch
 import datetime as dt
 from torch.utils.tensorboard import SummaryWriter
+# import torchmetrics
 
-def Custom_Model():
+class Custom_Model:
     def __init__(self, model, model_name:str, optimizer=None, loss_function=None):
         print(f'Init custom model...')
 
@@ -29,7 +28,8 @@ def Custom_Model():
         running_loss = 0.0
         last_loss = 0.0
 
-        correct = 0
+        # correct = 0.0
+        # accuracy = torchmetrics.Accuracy()
         # Here, we use enumerate(training_loader) instead of
         # iter(training_loader) so that we can track the batch
         # index and do some intra-epoch reporting
@@ -52,7 +52,12 @@ def Custom_Model():
 
             # Adjust learning weights
             self.optimizer.step()
-            correct += (outputs == labels).float().sum()
+            # print(len(outputs))
+            # print(len(labels))
+            # correct += (outputs == labels).sum().item()
+            
+            # accuracy(outputs, labels)
+
 
             # Gather data and report
             running_loss += loss.item()
@@ -63,9 +68,11 @@ def Custom_Model():
                 self.writer.add_scalar('Loss/train', last_loss, tb_x)
                 running_loss = 0.
         
-        accuracy = 100 * (correct / len(train_loader.dataset))
+        # accuracy = 100 * (correct / len(train_loader.dataset))
+        # acc = accuracy.compute()
+        # print(f'Accuracy: {acc}')
 
-        return last_loss, accuracy
+        return last_loss
     
     def train(self, num_epochs, train_loader, valid_loader):
         timestamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -75,6 +82,7 @@ def Custom_Model():
 
         best_valid_loss = 1_000_000
         last_valid_loss = 1000000
+        # total_acc = torchmetrics.Accuracy()
         print('Early stopping conditioned on validation loss')
         for epoch in range(EPOCHS):
             # print(f'epoch {epoch}')
@@ -83,25 +91,25 @@ def Custom_Model():
 
             # turn model to training
             self.model.train(True)
-            avg_loss, acc = self.train_one_epoch(epoch, train_loader, epoch)
+            avg_loss = self.train_one_epoch(train_loader, epoch)
 
             running_validation_loss = 0.0
             # set model to eval mode to evaluate epoch
             self.model.eval()
             # run model on validation set
             # i don't have validation set set up so using test set for now
-            vcorrect = 0
+            # vcorrect = 0
             for i, vdata in enumerate(valid_loader):
                 vinputs, vlabels = vdata
                 voutputs = self.model(vinputs)
                 vloss = self.loss_function(voutputs, vlabels)
-                vcorrect += (voutputs == vlabels).float().sum()
+                # vcorrect += (voutputs == vlabels).float().sum()
                 running_validation_loss += vloss
             
             avg_vloss = running_validation_loss / (i+1)
-            vacc = 100 * (vcorrect/len(valid_loader.dataset))
+            # vacc = total_acc(voutputs, vlabels)
             print(f'LOSS: train {avg_loss} valid {avg_vloss}\n')
-            print(f'ACC: train {acc} valid {vacc}\n')
+            # print(f'ACC: train {acc} valid {vacc}\n')
             print(f'--------------------')
             # also want to see accuracy
 
@@ -115,7 +123,7 @@ def Custom_Model():
             # track best performance and save the model's state
             if avg_vloss < best_valid_loss:
                 best_valid_loss = avg_vloss
-                model_path = f'{self.model_name}_{timestamp}_{epoch}'
+                model_path = f'models/{self.model_name}_{timestamp}_{epoch}'
                 torch.save(self.model.state_dict(), model_path)
             
             # early stopping

@@ -1,4 +1,4 @@
-from learning3d.models import PointNet, PointConv
+from learning3d.models import PointNet, create_pointconv, MaskNet, DGCNN
 import h5py as hp
 import numpy as np
 import torch.utils as tu
@@ -60,15 +60,26 @@ train_data, train_labels, train_mask = load_data(train_file)
 test_data, test_labels, test_mask = load_data(test_file)
 
 # create validation set from 10% of train set
-train_data, valid_data, train_mask, valid_mask = train_test_split(train_data, train_mask, .1)
+train_data, valid_data, train_mask, valid_mask = train_test_split(train_data, train_mask, test_size=.1)
 
 # put into dataloader for model
 train_loader = input_dataloader(train_data, train_mask, 128)
 test_loader = input_dataloader(test_data, test_mask, 128)
 valid_loader = input_dataloader(valid_data, valid_mask, 128)
 
-models = [Custom_Model(PointNet()), Custom_Model(PointConv())]
+PointConv = create_pointconv(classifier=False, pretrained=None)
+# ptconv = PointConv(emb_dims=1024, input_shape='bnc', input_channel_dim=3, classifier=True)
+models = [
+    Custom_Model(DGCNN(), "DGCNN"),
+    Custom_Model(MaskNet(), "MaskNet"),
+    Custom_Model(PointConv(), "pointconv"),
+    Custom_Model(PointNet(), "pointnet"), 
+    
+    ]
 
 for model in models:
-    model.train(200, train_loader, valid_loader)
+    try:
+        model.train(200, train_loader, valid_loader)
+    except Exception as e:
+        print(f'\nencountered error: {e}\n')
 
