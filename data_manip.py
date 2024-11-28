@@ -15,6 +15,7 @@ import open3d as o3d
 import random 
 import torch
 import torch.utils as tu
+from panda3d_viewer import Viewer, ViewerConfig
 
 # folder is located:
 data_dir = "/mnt/d/school/dataset/h5_files/main_split"
@@ -87,14 +88,52 @@ def show_point_clouds(clouds=[]):
         # print(f'Color: {color}')
         cloud.paint_uniform_color(color)
     
-    o3d.visualization.draw_geometries(
-        open3d_clouds,
-        zoom = 0.4459,
-        front=[0.9288, -0.2951, -0.2242], 
-        lookat=[1.6784, 2.0612, 1.4451], 
-        up=[-0.3402, -0.9189, -0.1996]
-    )
+    try:
+        print('trying draw geometries')
+        o3d.visualization.draw_geometries(
+            open3d_clouds,
+            zoom = 0.4459,
+            front=[0.9288, -0.2951, -0.2242],
+            lookat=[1.6784, 2.0612, 1.4451],
+            up=[-0.3402, -0.9189, -0.1996]
+        )
+    except Exception as e:
+        print(f'issue with open3d: {e}')
 
+    try:
+        print('try plotly')
+        o3d.visualization.draw_plotly(
+            open3d_clouds,
+            zoom = 0.4459,
+            front=[0.9288, -0.2951, -0.2242],
+            lookat=[1.6784, 2.0612, 1.4451],
+            up=[-0.3402, -0.9189, -0.1996]
+        )
+    except Exception as e:
+        print(f'issue with open3d: {e}')
+
+def show_point_cloud_panda(clouds:list):
+    print('showing point cloud')
+
+    colors = []
+    for cloud in clouds:
+        # convert array to float32 then uint32 to ensure viewer processes correctly
+        cloud = np.array(cloud, np.float32)
+        # cloud = np.view(dtype=np.uint32)    
+
+        color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
+        colors.append(color)
+
+    # create window
+    with Viewer(show_grid=False) as viewer:
+        viewer.reset_camera((10, 10, 15), look_at=(0, 0, 0))
+        viewer.append_group('root')
+        viewer.append_cloud('root', 'cloud', thickness=4)
+
+        while True:
+            for i in range(0, len(clouds)):
+                viewer.set_cloud_data('root', 'cloud', cloud[i], colors[i])
+            # time.sleep(0.03)
 def main():
     investigate_files(data_dir)
     investigate_data(train_file)

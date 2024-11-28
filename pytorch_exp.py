@@ -1,24 +1,21 @@
+print('processing imports...')
 from learning3d.models import PointNet, create_pointconv, MaskNet, DGCNN
+from learning3d.models import Segmentation
 import h5py as hp
 import numpy as np
 import torch.utils as tu
 import torch
 import datetime as dt
 from torch.utils.tensorboard import SummaryWriter
-from tensor_models import Custom_Model
-from sklearn import train_test_split
+from sklearn.model_selection import train_test_split
+from pytorch_models import Custom_Model
 
-'''
-custom model class
-    defines model, optimizer, loss function
-    has train function, train one epoch function, evaluate?
-'''
 
 # folder is located:
-# data_dir = "/mnt/d/school/dataset/h5_files/main_split"
+data_dir = "/mnt/d/school/dataset/h5_files/main_split"
 file = 'objectdataset_augmented25rot.h5'
-test_file = f'data/test_{file}'
-train_file = f'data/training_{file}'
+test_file = f'{data_dir}/test_{file}'
+train_file = f'{data_dir}/training_{file}'
 
 def load_data(filename):
     print(f"Starting load data for {filename}")
@@ -56,6 +53,8 @@ except:
     print('issue when accessing cuda')
 
 
+# load data
+print('loading data...')
 train_data, train_labels, train_mask = load_data(train_file)
 test_data, test_labels, test_mask = load_data(test_file)
 
@@ -63,23 +62,40 @@ test_data, test_labels, test_mask = load_data(test_file)
 train_data, valid_data, train_mask, valid_mask = train_test_split(train_data, train_mask, test_size=.1)
 
 # put into dataloader for model
-train_loader = input_dataloader(train_data, train_mask, 128)
-test_loader = input_dataloader(test_data, test_mask, 128)
-valid_loader = input_dataloader(valid_data, valid_mask, 128)
+train_loader = input_dataloader(train_data, train_mask, 16)
+test_loader = input_dataloader(test_data, test_mask, 16)
+valid_loader = input_dataloader(valid_data, valid_mask, 16)
 
-PointConv = create_pointconv(classifier=False, pretrained=None)
-# ptconv = PointConv(emb_dims=1024, input_shape='bnc', input_channel_dim=3, classifier=True)
-models = [
-    Custom_Model(DGCNN(), "DGCNN"),
-    Custom_Model(MaskNet(), "MaskNet"),
-    Custom_Model(PointConv(), "pointconv"),
-    Custom_Model(PointNet(), "pointnet"), 
+
+# create models
+# following is to train multiple models
+# PointConv = create_pointconv(classifier=False, pretrained=None)
+# # ptconv = PointConv(emb_dims=1024, input_shape='bnc', input_channel_dim=3, classifier=True)
+# models = [
+#     Custom_Model(DGCNN(), "DGCNN"),
+#     Custom_Model(MaskNet(), "MaskNet"),
+#     Custom_Model(PointConv(), "pointconv"),
+#     Custom_Model(PointNet(), "pointnet"), 
     
-    ]
+#     ]
 
-for model in models:
-    try:
-        model.train(200, train_loader, valid_loader)
-    except Exception as e:
-        print(f'\nencountered error: {e}\n')
+# for model in models:
+#     try:
+#         model.train(200, train_loader, valid_loader)
+#     except Exception as e:
+#         print(f'\nencountered error: {e}\n')
 
+# load model
+
+model = PointNet(emb_dims=1024, input_shape='bnc', use_bn=True)
+model = Custom_Model(model, "pointnet")
+model.model.load_state_dict(torch.load("./models/pointnet_seg_20241127_194009_21"))
+
+# predict on test set?
+result = model.predict(test_data[5])
+
+object_points = test_data[5][result == 0]
+background_points = test_data[5][result == 1]
+
+from data_manip import show_point_cloud_panda
+show_point_cloud_panda([object_points, background_points])
