@@ -13,6 +13,8 @@ import h5py as hp
 import numpy as np
 import open3d as o3d
 import random 
+import torch
+import torch.utils as tu
 
 # folder is located:
 data_dir = "/mnt/d/school/dataset/h5_files/main_split"
@@ -63,6 +65,15 @@ def load_data(filename):
     mask[mask==-1] = 15
     print(np.unique(mask))
     return data, labels, mask
+
+def input_dataloader(data, labels, batch_size=16):
+    # put data into dataloader for pytorch implementation
+    inputs = torch.tensor(data)
+    outputs = torch.LongTensor(labels)
+    dataset = tu.data.TensorDataset(inputs, outputs)
+    dataloader = tu.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    return dataloader
 
 def show_point_clouds(clouds=[]):
     open3d_clouds = []
