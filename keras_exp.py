@@ -17,10 +17,13 @@ from keras_model_class import Keras_Custom_Model
 
 # import data manipulation functions
 from data_manip import load_data, train_file, test_file
+from data_manip import load_points_from_stl, show_point_cloud_panda
 
 # other imports
 import keras
 import os
+from dgcnn.components import DeepGraphConvolution
+import numpy as np
 
 def load_all_data():
     train_data, train_label, train_mask = load_data(train_file)
@@ -28,7 +31,7 @@ def load_all_data():
 
     return train_data, train_label, train_mask, test_data, test_label, test_mask
 
-def build_pointnet_model(filepath):
+def build_pointnet_model(filepath=None):
     if filepath is not None and os.path.exists(filepath):
         print(f'Loading model from {filepath}')
         model = keras.models.load_model(filepath)
@@ -55,67 +58,72 @@ def save_data(filename, model_name, scores, parameters):
                 f.write('\n')
         f.write(f'\nTrain Score,{scores[0]},Test score,{scores[1]},\n')
 
+def build_dgcnn_model(input_shape=None, filepath=None):
+    if filepath is not None and os.path.exists(filepath):
+        print(f'Loading dgcnn model from {filepath}')
+        model = keras.models.load_model(filepath)
+    elif input_shape is None:
+        print(f'Input shape must not be none if filepath is none.')
+        exit(1)
+    else:
+        print(f'Model checkpoint does not exists. Building model with shape {input_shape}')
+
+        # corresponding fully connected adjacency matrices
+        adjacency = np.ones((100, 10, 10))
+
+        # inputs to the DGCNN
+        X = keras.layers.Input(input_shape, name="graph_signal")
+        E = keras.layers.Input(shape=(input_shape[0], input_shape[0]), name="adjacency")
+
+        # DGCNN
+        # Note that we pass the signals and adjacencies as a tuple.
+        # The graph signal always goes first!
+        output = DeepGraphConvolution([input_shape[0], 2], k=5 )((X, E))
+        model = keras.Model(inputs=[X, E], outputs=output)
+
+    return model
 
 # ------ run experiments -------
 train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
 
-model = Keras_Custom_Model(build_pointnet_model(), "keras_pointnet")
-
-# model = build_pointnet_model()
-# model = build_pointconv_model()
+# model = build_pointnet_model("models/keras_checkpoint_keras_pointnet.keras")
+model = build_dgcnn_model(train_data[0].shape)
+# model = Keras_Custom_Model(model, "pointnet")
+model = Keras_Custom_Model(model, "dgcnn")
 model.build_callbacks()
 
 
-batch_sizes = [16]#, 32, 64]
-epochs = [10, 50, 100]
-optimizer = ['adam', 'adamw']
-validation_split = [0, .1]#, .2, .3]
+batch_sizes = [16] #, 32, 64]
+epochs = [10] #, 50, 100]
+optimizer = ['adam'] #, 'adamw']
+validation_split = [.1] #, .2, .3]
 
 for batch in batch_sizes:
-    # model = build_pointconv_model(batch, (train_data[0].shape))
     for epoch in epochs:
         for opt in optimizer:
             # compile model
-            # model = compile_model(model, opt)
             model.compile_model(opt)
-
             for valid in validation_split:
-                model_name = f"pointconv_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
+                model_name = f"dgcnn_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
                 print(f'\nNow running model: {model_name}')
 
                 # train model
-                model, history = model.train_model(train_data, train_mask, batch, epoch, valid)
+                history = model.train_model(train_data, train_mask, batch, epoch, valid)
                 # score model
                 scores = model.score_model(train_data, train_mask, test_data, test_mask)
 
                 # save data
                 save_data(f'exp1/{model_name}.csv', model_name, scores, params)
 
+# ----- prediction ---------
+# predict on data and show point cloud
+# point_cloud = load_points_from_stl("data/knife.stl")
+# pred = model.predict_model(point_cloud)
+# print('pred', pred.shape, pred)
 
-# model, history = train_model(model, train_data, train_mask, 16, 10, callbacks)
-# train_score, test_score = score_model(model, train_data, train_mask, test_data, test_mask)
-# save_data('final_project_')
+# background_points = point_cloud[pred==1]
+# object_points = point_cloud[pred==0]
+# print('shapes:', background_points.shape, object_points.shape)
 
-# callback_funcs = build_callbacks()
-
-# # build model
-# model = PointNetFull(num_points=2048, num_classes=16)
-# model.compile(optimizer='adam',
-#                 loss='sparse_categorical_crossentropy',
-#                 metrics=['accuracy'])
-
-# # load data
-# train_data, train_label, train_mask = load_data(train_file)
-# test_data, test_label, test_mask = load_data(test_file)
-
-# # train model
-# history = model.fit(train_data, train_mask, batch_size=16, epochs=10, callbacks=callback_funcs)
-
-# # evaluation model
-# train_score = model.evaluate(x=train_data, y=train_label, verbose=0)
-# test_score = model.evaluate(x=test_data, y=test_label, verbose=0)
-
-# # print score
-# print(f'Train score: {train_score}')
-# print(f'Test score: {test_score}')
+# show_point_cloud_panda([background_points, object_points])
