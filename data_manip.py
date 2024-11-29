@@ -11,14 +11,16 @@
 import os
 import h5py as hp
 import numpy as np
-import open3d as o3d
+# import open3d as o3d
 import random 
-import torch
-import torch.utils as tu
+from stl import mesh
+# import torch
+# import torch.utils as tu
 from panda3d_viewer import Viewer, ViewerConfig
 
 # folder is located:
 data_dir = "/mnt/d/school/dataset/h5_files/main_split"
+# data_dir = "data"
 file = 'objectdataset_augmented25rot.h5'
 test_file = f'{data_dir}/test_{file}'
 train_file = f'{data_dir}/training_{file}'
@@ -70,6 +72,32 @@ def load_data(filename):
     mask[mask==-1] = 1
     print(np.unique(mask))
     return data, labels, mask
+
+def load_points_from_stl(filename, round=False):
+    print('Loading stl file...')
+    model_mesh = mesh.Mesh.from_file(filename)
+    point_cloud = np.copy(model_mesh.data['vectors'])
+
+    # make 1x3 dimensional list instead of 3x3
+    point_cloud = np.reshape(point_cloud, (point_cloud.shape[0]*point_cloud.shape[1], 3))
+
+    if round:
+        # rounds points to 2 decimal places
+        # does remove some accuracy
+        point_cloud *= 100
+        point_cloud = np.trunc(point_cloud)
+        point_cloud /= 100
+
+    # remove duplicate values
+    print("Removing duplicate points...")
+    point_cloud = np.unique(point_cloud, axis=0)
+
+    # min = np.min(point_cloud)
+    # if min < 0:
+    #     print(f'getting rid of negative numbers by {min}')
+    #     point_cloud -= min
+
+    return point_cloud
 
 def input_dataloader(data, labels, batch_size=16):
     # put data into dataloader for pytorch implementation
@@ -138,6 +166,8 @@ def show_point_cloud_panda(clouds:list):
             for i in range(0, len(clouds)):
                 viewer.set_cloud_data('root', 'cloud', cloud[i], colors[i])
             # time.sleep(0.03)
+
+
 def main():
     investigate_files(data_dir)
     investigate_data(train_file)
