@@ -9,8 +9,8 @@
 # ------------------------
 
 # import models
-from  other_libraries_used.pointnet1_keras.pointnet import PointNetFull
-from other_libraries_used.pointconvTF2.model_modelnet import PointConvModel
+from  other_libraries_used.pointnet import PointNetFull
+# from other_libraries_used.pointconvTF2.model_modelnet import PointConvModel
 
 # import model class
 from keras_model_class import Keras_Custom_Model
