@@ -19,7 +19,7 @@ class Keras_Custom_Model():
         self.train_score = 0
         self.test_score = 0
 
-    def build_callbacks(self, checkpoint_file):
+    def build_callbacks(self, checkpoint_file=None):
         if checkpoint_file is None:
             checkpoint_file = f"./model_checkpoints/keras_checkpoint_{self.model_name}.keras"
         else:
