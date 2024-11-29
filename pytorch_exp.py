@@ -1,3 +1,13 @@
+# ------------------------
+# @file     pytorch_exp.py
+# @date     November, 2024
+# @author   Jordan Reed
+# @email    reed5204@vandals.uidaho.edu
+# @brief    experiments for pytorch models
+#           currently predicts labels based on model trained in google colab
+#           
+# ------------------------
+
 print('processing imports...')
 from learning3d.models import PointNet, create_pointconv, MaskNet, DGCNN
 from learning3d.models import Segmentation
@@ -67,26 +77,7 @@ test_loader = input_dataloader(test_data, test_mask, 16)
 valid_loader = input_dataloader(valid_data, valid_mask, 16)
 
 
-# create models
-# following is to train multiple models
-# PointConv = create_pointconv(classifier=False, pretrained=None)
-# # ptconv = PointConv(emb_dims=1024, input_shape='bnc', input_channel_dim=3, classifier=True)
-# models = [
-#     Custom_Model(DGCNN(), "DGCNN"),
-#     Custom_Model(MaskNet(), "MaskNet"),
-#     Custom_Model(PointConv(), "pointconv"),
-#     Custom_Model(PointNet(), "pointnet"), 
-    
-#     ]
-
-# for model in models:
-#     try:
-#         model.train(200, train_loader, valid_loader)
-#     except Exception as e:
-#         print(f'\nencountered error: {e}\n')
-
 # load model
-
 model = PointNet(emb_dims=1024, input_shape='bnc', use_bn=True)
 model = Custom_Model(model, "pointnet")
 model.model.load_state_dict(torch.load("./models/pointnet_seg_20241127_194009_21"))
