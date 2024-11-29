@@ -63,7 +63,11 @@ def load_data(filename):
         labels = np.array(f['label'][:])
         mask = np.array(f['mask'][:])
     
-    mask[mask==-1] = 15
+    # mask[mask==-1] = 15
+    
+    # only care about background and foreground
+    mask[mask!=-1] = 0
+    mask[mask==-1] = 1
     print(np.unique(mask))
     return data, labels, mask
 
@@ -119,7 +123,7 @@ def show_point_cloud_panda(clouds:list):
     for cloud in clouds:
         # convert array to float32 then uint32 to ensure viewer processes correctly
         cloud = np.array(cloud, np.float32)
-        # cloud = np.view(dtype=np.uint32)    
+        cloud = np.view(dtype=np.uint32)    
 
         color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
         colors.append(color)
