@@ -1,4 +1,11 @@
-
+# ------------------------
+# @file     pytorch_models.py
+# @date     November 20, 2024
+# @author   Jordan Reed
+# @email    reed5204@vandals.uidaho.edu
+# @brief    model manipulation for final project
+#           creates a custom model to wrap training functions for pytorch models
+# ------------------------
 
 import torch
 import datetime as dt
