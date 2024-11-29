@@ -8,13 +8,19 @@
 #           https://github.com/minhncedutw/pointnet1_keras
 # ------------------------
 
-# import model 
+# import models
 from  other_libraries_used.pointnet1_keras.pointnet import PointNetFull
 from other_libraries_used.pointconvTF2.model_modelnet import PointConvModel
-import keras
+
+# import model class
 from keras_model_class import Keras_Custom_Model
+
 # import data manipulation functions
 from data_manip import load_data, train_file, test_file
+
+# other imports
+import keras
+import os
 
 def load_all_data():
     train_data, train_label, train_mask = load_data(train_file)
@@ -22,8 +28,15 @@ def load_all_data():
 
     return train_data, train_label, train_mask, test_data, test_label, test_mask
 
-def build_pointnet_model():
-    model = PointNetFull(num_points=2048, num_classes=2)
+def build_pointnet_model(filepath):
+    if filepath is not None and os.path.exists(filepath):
+        print(f'Loading model from {filepath}')
+        model = keras.models.load_model(filepath)
+    else:
+        print(f'Model checkpoint does not exist')
+        model = PointNetFull(num_points=2048, num_classes=2)
+    print(type(model))
+    model.summary()
     return model
 
 def build_pointconv_model(batch_size, input_shape):
@@ -42,6 +55,8 @@ def save_data(filename, model_name, scores, parameters):
                 f.write('\n')
         f.write(f'\nTrain Score,{scores[0]},Test score,{scores[1]},\n')
 
+
+# ------ run experiments -------
 train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
 
 model = Keras_Custom_Model(build_pointnet_model(), "keras_pointnet")
