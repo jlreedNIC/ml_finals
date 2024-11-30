@@ -26,7 +26,7 @@ class Keras_Custom_Model():
             checkpoint_file = f'./model_checkpoints/{checkpoint_file}.keras'
         
         monitoring = 'loss'
-        callback_early_stopping = keras.callbacks.EarlyStopping(patience=2, monitor=monitoring)
+        callback_early_stopping = keras.callbacks.EarlyStopping(patience=3, monitor=monitoring)
         callback_checkpoint = keras.callbacks.ModelCheckpoint(
             checkpoint_file, 
             monitor=monitoring, 
@@ -60,14 +60,17 @@ class Keras_Custom_Model():
         print(f"training score: {self.train_score}")
         print(f'test score: {self.test_score}')
 
-        return self.train_score, self, self.test_score
+        return self.train_score, self.test_score
 
     def save_model(self):
         self.model.save(f'models/{self.model_name}.keras')
     
     def predict_model(self, data):
         predictions = self.model.predict(data)
+        print(f'pred shape: {predictions.shape}')
+        predictions = np.argmax(predictions, axis=0)
         predictions = np.argmax(predictions, axis=1)
+        print(f'pred shape: {predictions.shape}')
 
         return predictions
 
