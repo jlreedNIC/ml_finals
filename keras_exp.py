@@ -10,10 +10,6 @@
 
 # import models
 from  other_libraries_used.pointnet import PointNetFull
-
-import sys
-sys.path.append("/home/jreed/ml_finals/other_libraries_used/")
-from dgcnn_imp.tensorflow.models.dgcnn import get_model
 # from other_libraries_used.pointconvTF2.model_modelnet import PointConvModel
 
 # import model class
@@ -106,12 +102,16 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
     # convolutional layer
     for i in range(0, num_conv_layers):
         layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
-        layers.append(keras.layers.MaxPool2D(pool_size=(2,2), padding="same"))
+        layers.append(keras.layers.MaxPool2D(pool_size=(4,4), padding="same"))
     
+    # for i in range(0, num_conv_layers):
+    #     layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
+    #     layers.append(keras.layers.UpSampling2D(size=(4,4)))
+
     # transform to NN
     layers.append(keras.layers.Flatten())
     layers.append(keras.layers.Dropout(.5))
-    layers.append(keras.layers.Dense(output_size, activation='softmax'))
+    layers.append(keras.layers.Dense(output_size, activation='linear'))
 
     model = keras.models.Sequential(layers)
     model.summary()
@@ -178,24 +178,20 @@ def save_data(filename, model_name, scores, parameters):
 
 # ------ run experiments -------
 train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
-# train_data, test_data = data_prep_cnn(train_data, test_data)
+train_data, test_data = data_prep_cnn(train_data, test_data)
 
-# train_mask, test_mask = data_prep_cnn(train_mask, test_mask)
 print(train_data.shape)
 print(train_mask.shape)
-# model = build_pointnet_model("models/keras_checkpoint_keras_pointnet.keras")
-# model = build_dgcnn_model(train_data[0].shape)
 
 # num_node_layers = [50 for i in range(0,20)]
 # num_node_layers = [2000 - (i*75) for i in range(0,20)]
 
-# model = build_cnn_model(
-#     5,
-#     (2048, 3, 1), output_size=2)
+model = build_cnn_model(
+    5,
+    (2048, 3, 1), output_size=2048)
 # model = load_keras_model("model_checkpoints/keras_checkpoint_fully_connected_nn_custom_layers.keras")
 
-model = get_model(train_data, True)
-model = Keras_Custom_Model(model, "dgcnn")
+model = Keras_Custom_Model(model, "cnn")
 model.build_callbacks()
 
 
@@ -205,11 +201,10 @@ optimizer = ['adam'] #, 'adamw']
 validation_split = [.1] #, .2, .3]
 
 for batch in batch_sizes:
-    # model.model = PointConvModel(batch, False, 2)
     for epoch in epochs:
         for opt in optimizer:
             # compile model
-            model.compile_model(opt)
+            model.compile_model(opt, keras.losses.MeanSquaredError())
             for valid in validation_split:
                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
