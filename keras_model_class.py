@@ -35,7 +35,9 @@ class Keras_Custom_Model():
         
         self.callback_funcs = [callback_early_stopping, callback_checkpoint]
 
-    def compile_model(self, optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy']):
+    def compile_model(self, optimizer='adam', loss=None, metrics=['accuracy']):
+        if loss is None:
+            loss = 'sparse_categorical_crossentropy'
         self.model.compile(
             optimizer=optimizer,
             loss=loss,
