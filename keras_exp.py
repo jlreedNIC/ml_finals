@@ -97,11 +97,12 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
 
     # input layer
     layers.append(keras.Input(shape=input_size))
+    # layers.append(keras.layers.Flatten(input_shape=input_size))
 
     # convolutional layer
     for i in range(0, num_conv_layers):
-        layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu'))
-        layers.append(keras.layers.MaxPool2D(pool_size=(2,2)))
+        layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
+        layers.append(keras.layers.MaxPool2D(pool_size=(2,2), padding="same"))
     
     # transform to NN
     layers.append(keras.layers.Flatten())
@@ -134,7 +135,7 @@ def build_fcnn_model(num_layers:int, num_nodes:list, activation:str, input_size,
     layers = []
 
     # input layer - providing shape of data (not batches)
-    layers.append(keras.layers.Flatten(input_shape=input_size))
+    layers.append(keras.layers.Input(shape=input_size))
 
     # hidden layers
     for i in range(0, num_layers):
@@ -151,7 +152,14 @@ def build_fcnn_model(num_layers:int, num_nodes:list, activation:str, input_size,
     
     return model
 
+def load_keras_model(filename:str):
+    if os.path.exists(filename):
+        model = keras.models.load_model(filename)
+    else:
+        print(f"no model found at {filename}")
+        model = None
 
+    return model
 
 
 def save_data(filename, model_name, scores, parameters):
@@ -164,47 +172,68 @@ def save_data(filename, model_name, scores, parameters):
                 f.write('\n')
         f.write(f'\nTrain Score,{scores[0]},Test score,{scores[1]},\n')
 
-# ------ run experiments -------
-train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
+# # ------ run experiments -------
+# train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
+# train_data, test_data = data_prep_cnn(train_data, test_data)
+# # train_mask, test_mask = data_prep_cnn(train_mask, test_mask)
+# print(train_data.shape)
+# print(train_mask.shape)
+# # model = build_pointnet_model("models/keras_checkpoint_keras_pointnet.keras")
+# # model = build_dgcnn_model(train_data[0].shape)
 
-# model = build_pointnet_model("models/keras_checkpoint_keras_pointnet.keras")
-model = build_dgcnn_model(train_data[0].shape)
-# model = Keras_Custom_Model(model, "pointnet")
-model = Keras_Custom_Model(model, "dgcnn")
-model.build_callbacks()
+# # num_node_layers = [50 for i in range(0,20)]
+# # num_node_layers = [2000 - (i*75) for i in range(0,20)]
+
+# model = build_cnn_model(
+#     5,
+#     (2048, 3, 1), output_size=2)
+# # model = load_keras_model("model_checkpoints/keras_checkpoint_fully_connected_nn_custom_layers.keras")
+# model = Keras_Custom_Model(model, "fully_connected_nn_custom_layers")
+# model.build_callbacks()
 
 
-batch_sizes = [16] #, 32, 64]
-epochs = [10] #, 50, 100]
-optimizer = ['adam'] #, 'adamw']
-validation_split = [.1] #, .2, .3]
+# batch_sizes = [64] #, 32, 64]
+# epochs = [200] #, 50, 100]
+# optimizer = ['adam'] #, 'adamw']
+# validation_split = [.1] #, .2, .3]
 
-for batch in batch_sizes:
-    for epoch in epochs:
-        for opt in optimizer:
-            # compile model
-            model.compile_model(opt)
-            for valid in validation_split:
-                model_name = f"dgcnn_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
-                params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
-                print(f'\nNow running model: {model_name}')
+# for batch in batch_sizes:
+#     for epoch in epochs:
+#         for opt in optimizer:
+#             # compile model
+#             model.compile_model(opt)
+#             for valid in validation_split:
+#                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
+#                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
+#                 print(f'\nNow running model: {exp_name}')
 
-                # train model
-                history = model.train_model(train_data, train_mask, batch, epoch, valid)
-                # score model
-                scores = model.score_model(train_data, train_mask, test_data, test_mask)
+#                 # train model
+#                 history = model.train_model(train_data, train_mask, batch, epoch, valid)
+#                 # score model
+#                 scores = model.score_model(train_data, train_mask, test_data, test_mask)
 
-                # save data
-                save_data(f'exp1/{model_name}.csv', model_name, scores, params)
+#                 # save data
+#                 save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
 
 # ----- prediction ---------
 # predict on data and show point cloud
-# point_cloud = load_points_from_stl("data/knife.stl")
-# pred = model.predict_model(point_cloud)
-# print('pred', pred.shape, pred)
+# model = PointNetFull("model_checkpoints/keras_checkpoint_pointnet_trainbatch2.keras", num_classes=2)
+model = build_pointnet_model("model_checkpoints/keras_checkpoint_pointnet_trainbatch2.keras")
+model = Keras_Custom_Model(model, "pointnet_trainingbatch2")
+point_cloud = load_points_from_stl("data/knife.stl")
 
-# background_points = point_cloud[pred==1]
-# object_points = point_cloud[pred==0]
-# print('shapes:', background_points.shape, object_points.shape)
+# perform random sampling of object
+indices = np.array(range(len(point_cloud)))
+indices = np.random.choice(indices, 2048, False)
+model_subset = point_cloud[indices]
+model_subset = np.expand_dims(model_subset, 0)
+print(model_subset.shape)
 
-# show_point_cloud_panda([background_points, object_points])
+pred = model.predict_model(model_subset)
+print('pred', pred.shape, pred)
+
+background_points = model_subset[pred[0]==1]
+object_points = model_subset[pred[0]==0]
+print('shapes:', background_points.shape, object_points.shape)
+
+show_point_cloud_panda([background_points, object_points])
