@@ -93,6 +93,28 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
     :param output_size: number of categories
     :return: built model
     """
+
+    # layers = [
+    #     keras.Input(shape=input_size),
+        
+    #     # convolution and max pooling
+    #     keras.layers.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'),
+    #     keras.layers.MaxPool2D(pool_size=(4,4), padding="same"),
+    #     keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'),
+    #     keras.layers.MaxPool2D(pool_size=(4,4), padding="same"),
+
+    #     # upsampling and convolution
+    #     keras.layers.UpSampling2D(4),
+    #     keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'),
+    #     keras.layers.UpSampling2D(4),
+    #     keras.layers.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'),
+
+    #     # transform to NN
+    #     # keras.layers.Flatten(),
+    #     keras.layers.Dropout(.5),
+    #     keras.layers.Dense(output_size, activation='softmax')
+    # ]
+
     layers = []
 
     # input layer
@@ -102,16 +124,21 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
     # convolutional layer
     for i in range(0, num_conv_layers):
         layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
-        layers.append(keras.layers.MaxPool2D(pool_size=(4,4), padding="same"))
+        # layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
+        layers.append(keras.layers.MaxPool2D(pool_size=(2,2), padding="same"))
     
-    # for i in range(0, num_conv_layers):
-    #     layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
-    #     layers.append(keras.layers.UpSampling2D(size=(4,4)))
+    for i in range(0, num_conv_layers):
+        layers.append(keras.layers.UpSampling2D(size=(2,2)))
+        # layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
+        layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
+        
 
     # transform to NN
+    layers.append(keras.layers.Conv2D(32, kernel_size=(1,1), activation='relu', padding='same'))
     layers.append(keras.layers.Flatten())
     layers.append(keras.layers.Dropout(.5))
-    layers.append(keras.layers.Dense(output_size, activation='linear'))
+    layers.append(keras.layers.Dense(2048, activation='relu'))
+    layers.append(keras.layers.Dense(output_size, activation='softmax'))
 
     model = keras.models.Sequential(layers)
     model.summary()
@@ -183,11 +210,12 @@ train_data, test_data = data_prep_cnn(train_data, test_data)
 print(train_data.shape)
 print(train_mask.shape)
 
+
 # num_node_layers = [50 for i in range(0,20)]
 # num_node_layers = [2000 - (i*75) for i in range(0,20)]
 
 model = build_cnn_model(
-    5,
+    2,
     (2048, 3, 1), output_size=2048)
 # model = load_keras_model("model_checkpoints/keras_checkpoint_fully_connected_nn_custom_layers.keras")
 
@@ -195,7 +223,7 @@ model = Keras_Custom_Model(model, "cnn")
 model.build_callbacks()
 
 
-batch_sizes = [16] #, 32, 64]
+batch_sizes = [64] #, 32, 64]
 epochs = [200] #, 50, 100]
 optimizer = ['adam'] #, 'adamw']
 validation_split = [.1] #, .2, .3]
@@ -204,7 +232,7 @@ for batch in batch_sizes:
     for epoch in epochs:
         for opt in optimizer:
             # compile model
-            model.compile_model(opt, keras.losses.MeanSquaredError())
+            model.compile_model(opt, keras.losses.BinaryCrossentropy())
             for valid in validation_split:
                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]

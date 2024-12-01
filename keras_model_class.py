@@ -26,7 +26,7 @@ class Keras_Custom_Model():
             checkpoint_file = f'./model_checkpoints/{checkpoint_file}.keras'
         
         monitoring = 'loss'
-        callback_early_stopping = keras.callbacks.EarlyStopping(patience=3, monitor=monitoring)
+        callback_early_stopping = keras.callbacks.EarlyStopping(patience=2, monitor=monitoring)
         callback_checkpoint = keras.callbacks.ModelCheckpoint(
             checkpoint_file, 
             monitor=monitoring, 

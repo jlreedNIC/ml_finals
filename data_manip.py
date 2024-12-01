@@ -19,9 +19,10 @@ from stl import mesh
 from panda3d_viewer import Viewer, ViewerConfig
 
 # folder is located:
-data_dir = "/mnt/d/school/dataset/h5_files/main_split"
-# data_dir = "data"
+# data_dir = "/mnt/d/school/dataset/h5_files/main_split"
+data_dir = "data"
 file = 'objectdataset_augmented25rot.h5'
+# file = 'objectdataset_augmentedrot_scale75.h5'
 test_file = f'{data_dir}/test_{file}'
 train_file = f'{data_dir}/training_{file}'
 
