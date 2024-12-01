@@ -1,0 +1,8 @@
+Model,fully_connected_nn_custom_layers_b64_e200_oadam_v10,
+Parameters,
+batch,64,
+epochs,200,
+optimizer,adam,
+validation,0.1,
+
+Train Score,[0.6899136304855347, 0.5401962995529175],Test score,[0.6914547085762024, 0.53043133020401],

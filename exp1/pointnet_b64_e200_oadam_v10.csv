@@ -1,0 +1,8 @@
+Model,pointnet_b64_e200_oadam_v10,
+Parameters,
+batch,64,
+epochs,200,
+optimizer,adam,
+validation,0.1,
+
+Train Score,[0.23595984280109406, 0.9132106304168701],Test score,[0.8706542253494263, 0.7192859053611755],

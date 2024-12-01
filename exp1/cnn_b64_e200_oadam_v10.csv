@@ -1,0 +1,8 @@
+Model,cnn_b64_e200_oadam_v10,
+Parameters,
+batch,64,
+epochs,200,
+optimizer,adam,
+validation,0.1,
+
+Train Score,[0.30265796184539795, 0.00235376157797873],Test score,[1.3943930864334106, 0.000691323890350759],

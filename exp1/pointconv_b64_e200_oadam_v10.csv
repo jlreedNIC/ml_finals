@@ -1,0 +1,8 @@
+Model,pointconv_b64_e200_oadam_v10,
+Parameters,
+batch,64,
+epochs,200,
+optimizer,adam,
+validation,0.1,
+
+Train Score,[0.29005762934684753, 0.8806235790252686],Test score,<keras_model_class.Keras_Custom_Model object at 0x7eb4271520d0>,
