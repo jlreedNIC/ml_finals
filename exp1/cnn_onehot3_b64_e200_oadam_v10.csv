@@ -1,0 +1,8 @@
+Model,cnn_onehot3_b64_e200_oadam_v10,
+Parameters,
+batch,64,
+epochs,200,
+optimizer,adam,
+validation,0.1,
+
+Train Score,[93.310546875, 0.9020154476165771],Test score,[89.01420593261719, 0.8938374519348145],
