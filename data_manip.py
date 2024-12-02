@@ -128,22 +128,21 @@ def input_dataloader(data, labels, batch_size=16):
 
     return dataloader
 
-def draw_registration_result(source, target, transformation):
-    """
-    param: source - source point cloud
-    param: target - target point cloud
-    param: transformation - 4 X 4 homogeneous transformation matrix
-    """
-    # source_temp = copy.deepcopy(source)
-    # target_temp = copy.deepcopy(target)
-    source = o3d.io.read_triangle_mesh(source).vertices
-    source = o3d.geometry.PointCloud(source)
-    source = source.scale(300.0, np.array([0,0,0]))
-    source.paint_uniform_color([1, 0.706, 0])
-    # target.paint_uniform_color([0, 0.651, 0.929])
-    # source_temp.transform(transformation)
-    o3d.visualization.draw_geometries([source], zoom=0.4459, front=[0.9288, -0.2951, -0.2242], lookat=[1.6784, 2.0612, 1.4451], up=[-0.3402, -0.9189, -0.1996])
+def one_hot_encode(test_labels):
+    background = np.zeros(test_labels.shape)
+    background[test_labels==1] = 1
 
+    foreground = np.zeros(test_labels.shape)
+    foreground[test_labels==0] = 1
+
+    print(f'num background in testmask: {(test_labels==1).sum()}')
+    print(f'num foreground in testmask: {(test_labels==0).sum()}')
+
+    print(f'num background in background: {(background==1).sum()}')
+    print(f'num foreground in foreground: {(foreground==1).sum()}')
+    print(f'shapes: {test_labels.shape} {background.shape} {foreground.shape}')
+
+    return [foreground, background]
 
 def show_point_clouds(clouds=[]):
     open3d_clouds = []
@@ -152,35 +151,23 @@ def show_point_clouds(clouds=[]):
         new_cloud.points = o3d.utility.Vector3dVector(cloud)
         open3d_clouds.append(new_cloud)
 
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window()
     colors = np.array([[252, 15, 192], [0, 150, 255]], dtype=np.float64) # bright pink, bright blue
-    # color2 = [0, 150, 255] # bright blue
-    # colors = colors/255
-    # color2 = color2/255
 
     for i, cloud in enumerate(open3d_clouds):
-        # color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
-        # color = [1,1,1]
-        # color = np.array(color, dtype=np.float32)
-        colors[i] = colors[i]/255
-        # print(f'Color: {colors[i]} {type(colors[i])}')
-        cloud.paint_uniform_color(colors[i])
+        # assign colors. if more than 2 clouds are specified, start assigning random colors
+        if i >= 2:
+            color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100]
+            color = np.array(color, dtype=np.float32)
+        else:
+            color = colors[i]/255
+
+        cloud.paint_uniform_color(color)
     
     try:
         print('trying draw geometries')
-        
         o3d.visualization.draw_geometries(
             open3d_clouds,
-            # zoom = 0.4459,
-            # front=[0.9288, -0.2951, -0.2242],
-            # lookat=[1.6784, 2.0612, 1.4451],
-            # up=[-0.3402, -0.9189, -0.1996]
         )
-        # vis.add_geometry(cloud)
-        # vis.poll_events()
-        # vis.update_renderer()
-        # time.sleep(0.005)
     except Exception as e:
         print(f'issue with open3d: {e}')
 
@@ -188,10 +175,6 @@ def show_point_clouds(clouds=[]):
     #     print('try plotly')
     #     o3d.visualization.draw_plotly(
     #         open3d_clouds,
-    #         zoom = 0.4459,
-    #         front=[0.9288, -0.2951, -0.2242],
-    #         lookat=[1.6784, 2.0612, 1.4451],
-    #         up=[-0.3402, -0.9189, -0.1996]
     #     )
     # except Exception as e:
     #     print(f'issue with open3d: {e}')
