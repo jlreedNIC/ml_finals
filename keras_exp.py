@@ -68,29 +68,47 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
     :return: built model
     """
 
-    layers = []
+    layers = [
+        keras.Input(shape=input_size),
+        keras.layers.Conv2D(64, kernel_size=(3,1), activation='relu', padding='same'),
+        keras.layers.MaxPool2D(pool_size=(2,2), padding="same"),
+        keras.layers.Conv2D(64, kernel_size=(3,1), activation='relu', padding='same'),
+        keras.layers.MaxPool2D(pool_size=(2,1), padding="same"),
 
-    # input layer
-    layers.append(keras.Input(shape=input_size))
+        keras.layers.UpSampling2D(size=(2,1)),
+        keras.layers.Conv2DTranspose(64, kernel_size=(3,1), activation='relu', padding='same'),
+        keras.layers.UpSampling2D(size=(2,1)),
+        keras.layers.Conv2DTranspose(64, kernel_size=(3,1), activation='relu', padding='same'),
 
-    # convolutional layer
-    for i in range(0, num_conv_layers):
-        layers.append(keras.layers.Conv2D(64, kernel_size=(3,1), activation='relu', padding='same'))
-        # layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
-        layers.append(keras.layers.MaxPool2D(pool_size=(2,1), padding="same"))
+        keras.layers.Conv2D(output_size, kernel_size=(1,1), activation='softmax', padding='same')
+    ]
+
+    # layers = []
+
+    # # input layer
+    # layers.append(keras.Input(shape=input_size))
+
+    # # convolutional layer
+    # for i in range(0, num_conv_layers):
+    #     layers.append(keras.layers.Conv2D(64, kernel_size=(3,1), activation='relu', padding='same'))
+    #     # layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
+    #     layers.append(keras.layers.MaxPool2D(pool_size=(2,2), padding="same"))
     
-    for i in range(0, num_conv_layers):
-        layers.append(keras.layers.UpSampling2D(size=(2,1)))
-        # layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
-        layers.append(keras.layers.Conv2DTranspose(64, kernel_size=(3,1), activation='relu', padding='same'))
-        
+    # for i in range(0, num_conv_layers):
+    #     layers.append(keras.layers.UpSampling2D(size=(2,1)))
+    #     # layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
+    #     layers.append(keras.layers.Conv2DTranspose(64, kernel_size=(3,1), activation='relu', padding='same'))
+    
+    # # layers.append(keras.layers.Conv1D(64, kernel_size=3, activation='relu', padding='same'))
+    # # layers.append(keras.layers.Conv1D(64, kernel_size=3, activation='relu', padding='same'))
+    # # layers.append(keras.layers.Conv1D(output_size, kernel_size=3, activation='softmax', padding='same'))
 
-    # transform to NN
-    layers.append(keras.layers.Conv2D(output_size, kernel_size=(1,1), activation='softmax', padding='same'))
-    # layers.append(keras.layers.Flatten())
-    # layers.append(keras.layers.Dropout(.5))
-    # layers.append(keras.layers.Dense(2048, activation='relu'))
-    # layers.append(keras.layers.Dense(output_size, activation='softmax'))
+    # # transform to NN
+    # layers.append(keras.layers.Conv2D(output_size, kernel_size=(1,1), activation='softmax', padding='same'))
+    # # layers.append(keras.layers.Flatten())
+    # # layers.append(keras.layers.Dropout(.5))
+    # # layers.append(keras.layers.Dense(2048, activation='relu'))
+    # # layers.append(keras.layers.Dense(output_size, activation='softmax'))
 
     model = keras.models.Sequential(layers)
     model.summary()
@@ -163,8 +181,8 @@ print(train_mask.shape)
 # -----------------
 # build and define cnn model
 train_data, test_data = data_prep_cnn(train_data, test_data)    # expand dims for cnn
-train_onehot_labels = one_hot_encode(train_mask, train_data)                # one hot encode train labels
-# test_onehot_labels = one_hot_encode(test_mask)                  # one hot encode test labels
+train_onehot_labels = one_hot_encode(train_mask)                # one hot encode train labels
+test_onehot_labels = one_hot_encode(test_mask)                  # one hot encode test labels
 
 # train_onehot_labels = np.reshape(train_onehot_labels, (2048, 1, 2))
 
@@ -178,31 +196,31 @@ model = Keras_Custom_Model(model, "cnn_onehot")
 
 
 
-# # ----- compile after architecture specified -------
-# model.build_callbacks()
+# ----- compile after architecture specified -------
+model.build_callbacks()
 
-# # specify parameters to test
-# batch_sizes = [64] #, 32, 64]
-# epochs = [200] #, 50, 100]
-# optimizer = ['adam'] #, 'adamw']
-# validation_split = [.1] #, .2, .3]
+# specify parameters to test
+batch_sizes = [64] #, 32, 64]
+epochs = [200] #, 50, 100]
+optimizer = ['adam'] #, 'adamw']
+validation_split = [.1] #, .2, .3]
 
-# # train model
-# for batch in batch_sizes:
-#     for epoch in epochs:
-#         for opt in optimizer:
-#             # compile model
-#             model.compile_model(opt, keras.losses.CategoricalCrossentropy())
-#             for valid in validation_split:
-#                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
-#                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
-#                 print(f'\nNow running model: {exp_name}')
+# train model
+for batch in batch_sizes:
+    for epoch in epochs:
+        for opt in optimizer:
+            # compile model
+            model.compile_model(opt, keras.losses.CategoricalCrossentropy())
+            for valid in validation_split:
+                exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
+                params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
+                print(f'\nNow running model: {exp_name}')
 
-#                 # train model
-#                 history = model.train_model(train_data, train_onehot_labels, batch, epoch, valid)
-#                 # score model
-#                 scores = model.score_model(train_data, train_onehot_labels, test_data, test_onehot_labels)
+                # train model
+                history = model.train_model(train_data, train_onehot_labels, batch, epoch, valid)
+                # score model
+                scores = model.score_model(train_data, train_onehot_labels, test_data, test_onehot_labels)
 
-#                 # save data
-#                 save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
+                # save data
+                save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
 
