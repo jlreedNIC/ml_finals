@@ -42,31 +42,6 @@ def build_pointnet_model(filepath=None):
     model.summary()
     return model
 
-def build_dgcnn_model(input_shape=None, filepath=None):
-    if filepath is not None and os.path.exists(filepath):
-        print(f'Loading dgcnn model from {filepath}')
-        model = keras.models.load_model(filepath)
-    elif input_shape is None:
-        print(f'Input shape must not be none if filepath is none.')
-        exit(1)
-    else:
-        print(f'Model checkpoint does not exists. Building model with shape {input_shape}')
-
-        # corresponding fully connected adjacency matrices
-        adjacency = np.ones((100, 10, 10))
-
-        # inputs to the DGCNN
-        X = keras.layers.Input(input_shape, name="graph_signal")
-        E = keras.layers.Input(shape=(input_shape[0], input_shape[0]), name="adjacency")
-
-        # DGCNN
-        # Note that we pass the signals and adjacencies as a tuple.
-        # The graph signal always goes first!
-        output = DeepGraphConvolution([input_shape[0], 2], k=5 )((X, E))
-        model = keras.Model(inputs=[X, E], outputs=output)
-
-    return model
-
 def data_prep_cnn(train_imgs, test_imgs):
     """
     Change shape of images for convolutional network.
@@ -94,32 +69,10 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
     :return: built model
     """
 
-    # layers = [
-    #     keras.Input(shape=input_size),
-        
-    #     # convolution and max pooling
-    #     keras.layers.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'),
-    #     keras.layers.MaxPool2D(pool_size=(4,4), padding="same"),
-    #     keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'),
-    #     keras.layers.MaxPool2D(pool_size=(4,4), padding="same"),
-
-    #     # upsampling and convolution
-    #     keras.layers.UpSampling2D(4),
-    #     keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'),
-    #     keras.layers.UpSampling2D(4),
-    #     keras.layers.Conv2D(64, kernel_size=(3,3), activation='relu', padding='same'),
-
-    #     # transform to NN
-    #     # keras.layers.Flatten(),
-    #     keras.layers.Dropout(.5),
-    #     keras.layers.Dense(output_size, activation='softmax')
-    # ]
-
     layers = []
 
     # input layer
     layers.append(keras.Input(shape=input_size))
-    # layers.append(keras.layers.Flatten(input_shape=input_size))
 
     # convolutional layer
     for i in range(0, num_conv_layers):
@@ -183,16 +136,6 @@ def build_fcnn_model(num_layers:int, num_nodes:list, activation:str, input_size,
     
     return model
 
-def load_keras_model(filename:str):
-    if os.path.exists(filename):
-        model = keras.models.load_model(filename)
-    else:
-        print(f"no model found at {filename}")
-        model = None
-
-    return model
-
-
 def save_data(filename, model_name, scores, parameters):
     with open(filename, 'w') as f:
         f.write(f'Model,{model_name},\n')
@@ -213,58 +156,44 @@ print(train_mask.shape)
 
 # num_node_layers = [50 for i in range(0,20)]
 # num_node_layers = [2000 - (i*75) for i in range(0,20)]
+# model = build_fcnn_model(20, num_node_layers,'relu', (2048, 3), 2)
 
-model = build_cnn_model(
-    2,
-    (2048, 3, 1), output_size=2048)
-# model = load_keras_model("model_checkpoints/keras_checkpoint_fully_connected_nn_custom_layers.keras")
+# model = build_cnn_model(
+#     2,
+#     (2048, 3, 1), output_size=2048)
+# model = load_keras_model("model_checkpoints/keras_checkpoint_fully_connected_nn_custom_layers2.keras")
 
-model = Keras_Custom_Model(model, "cnn")
+# model = Keras_Custom_Model(model, "cnn2")
+
+
+
+
+# ----- compile after architecture specified -------
 model.build_callbacks()
+model.summary()
 
+# specify parameters to test
+# batch_sizes = [64] #, 32, 64]
+# epochs = [200] #, 50, 100]
+# optimizer = ['adam'] #, 'adamw']
+# validation_split = [.1] #, .2, .3]
 
-batch_sizes = [64] #, 32, 64]
-epochs = [200] #, 50, 100]
-optimizer = ['adam'] #, 'adamw']
-validation_split = [.1] #, .2, .3]
+# train model
+# for batch in batch_sizes:
+#     for epoch in epochs:
+#         for opt in optimizer:
+#             # compile model
+#             model.compile_model(opt, keras.losses.BinaryCrossentropy())
+#             for valid in validation_split:
+#                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
+#                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
+#                 print(f'\nNow running model: {exp_name}')
 
-for batch in batch_sizes:
-    for epoch in epochs:
-        for opt in optimizer:
-            # compile model
-            model.compile_model(opt, keras.losses.BinaryCrossentropy())
-            for valid in validation_split:
-                exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
-                params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
-                print(f'\nNow running model: {exp_name}')
+#                 # train model
+#                 history = model.train_model(train_data, train_mask, batch, epoch, valid)
+#                 # score model
+#                 scores = model.score_model(train_data, train_mask, test_data, test_mask)
 
-                # train model
-                history = model.train_model(train_data, train_mask, batch, epoch, valid)
-                # score model
-                scores = model.score_model(train_data, train_mask, test_data, test_mask)
+#                 # save data
+#                 save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
 
-                # save data
-                save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
-
-# # ----- prediction ---------
-# # predict on data and show point cloud
-# # model = PointNetFull("model_checkpoints/keras_checkpoint_pointnet_trainbatch2.keras", num_classes=2)
-# model = build_pointnet_model("models/keras_checkpoint_keras_pointnet.keras")
-# model = Keras_Custom_Model(model, "pointnet_trainingbatch2")
-# point_cloud = load_points_from_stl("data/knife.stl")
-
-# # perform random sampling of object
-# indices = np.array(range(len(point_cloud)))
-# indices = np.random.choice(indices, 2048, False)
-# model_subset = point_cloud[indices]
-# model_subset = np.expand_dims(model_subset, 0)
-# print(f"from {point_cloud.shape} to {model_subset.shape}")
-
-# pred = model.predict_model(model_subset)
-# print('pred', pred.shape, pred)
-
-# background_points = model_subset[pred[0]==1]
-# object_points = model_subset[pred[0]==0]
-# print('shapes:', background_points.shape, object_points.shape)
-
-# show_point_cloud_panda([background_points, object_points])
