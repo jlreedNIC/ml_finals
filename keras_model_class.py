@@ -9,6 +9,7 @@
 
 import keras
 import numpy as np
+import os
 
 class Keras_Custom_Model():
     def __init__(self, model, model_name:str):
@@ -18,6 +19,13 @@ class Keras_Custom_Model():
         self.callback_funcs = []
         self.train_score = 0
         self.test_score = 0
+
+    def load_keras_model(self, filename:str):
+        if os.path.exists(filename):
+            self.model = keras.models.load_model(filename)
+        else:
+            print(f"no model found at {filename}")
+            self.model = None
 
     def build_callbacks(self, checkpoint_file=None):
         if checkpoint_file is None:
@@ -70,9 +78,13 @@ class Keras_Custom_Model():
     def predict_model(self, data):
         predictions = self.model.predict(data)
         print(f'pred shape: {predictions.shape}')
-        predictions = np.argmax(predictions, axis=0)
-        predictions = np.argmax(predictions, axis=1)
+        predictions = np.reshape(predictions, (2048,2))
         print(f'pred shape: {predictions.shape}')
+        # print('num backgrounds', (predictions==1).sum())
+        predictions = np.argmax(predictions, axis=1)
+        # predictions = np.max(predictions, axis=1)
+        print(f'pred shape after argmax: {predictions.shape}')
 
+        print('num backgrounds in prediction', (predictions==1).sum())
         return predictions
 
