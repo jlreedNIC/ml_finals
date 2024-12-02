@@ -11,7 +11,7 @@
 import os
 import h5py as hp
 import numpy as np
-# import open3d as o3d
+import open3d as o3d
 import random 
 from stl import mesh
 # import torch
@@ -19,8 +19,8 @@ from stl import mesh
 from panda3d_viewer import Viewer, ViewerConfig
 
 # folder is located:
-# data_dir = "/mnt/d/school/dataset/h5_files/main_split"
-data_dir = "data"
+data_dir = "/mnt/d/school/dataset/h5_files/main_split"
+# data_dir = "data"
 file = 'objectdataset_augmented25rot.h5'
 # file = 'objectdataset_augmentedrot_scale75.h5'
 test_file = f'{data_dir}/test_{file}'
@@ -28,6 +28,24 @@ train_file = f'{data_dir}/training_{file}'
 
 # print(f'test: {test_file}')
 # print(f'train: {train_file}')
+
+class_dict = {
+    '0': 'bag',
+    '1': 'bin',
+    '2': 'box', 
+    '3': 'cabinet', 
+    '4': 'chair', 
+    '5': 'desk', 
+    '6': 'display', 
+    '7': 'door', 
+    '8': 'shelf', 
+    '9': 'table', 
+    '10': 'bed', 
+    '11': 'pillow', 
+    '12': 'sink', 
+    '13': 'sofa', 
+    '14': 'toilet'
+}
 
 def investigate_files(dir):
     print("\nStarting file investigation...")
@@ -67,6 +85,7 @@ def load_data(filename):
         mask = np.array(f['mask'][:])
     
     # mask[mask==-1] = 15
+    # print(labels)
     
     # only care about background and foreground
     mask[mask!=-1] = 0
@@ -85,9 +104,9 @@ def load_points_from_stl(filename, round=False):
     if round:
         # rounds points to 2 decimal places
         # does remove some accuracy
-        point_cloud *= 100
+        point_cloud *= 10
         point_cloud = np.trunc(point_cloud)
-        point_cloud /= 100
+        point_cloud /= 10
 
     # remove duplicate values
     print("Removing duplicate points...")
@@ -109,6 +128,23 @@ def input_dataloader(data, labels, batch_size=16):
 
     return dataloader
 
+def draw_registration_result(source, target, transformation):
+    """
+    param: source - source point cloud
+    param: target - target point cloud
+    param: transformation - 4 X 4 homogeneous transformation matrix
+    """
+    # source_temp = copy.deepcopy(source)
+    # target_temp = copy.deepcopy(target)
+    source = o3d.io.read_triangle_mesh(source).vertices
+    source = o3d.geometry.PointCloud(source)
+    source = source.scale(300.0, np.array([0,0,0]))
+    source.paint_uniform_color([1, 0.706, 0])
+    # target.paint_uniform_color([0, 0.651, 0.929])
+    # source_temp.transform(transformation)
+    o3d.visualization.draw_geometries([source], zoom=0.4459, front=[0.9288, -0.2951, -0.2242], lookat=[1.6784, 2.0612, 1.4451], up=[-0.3402, -0.9189, -0.1996])
+
+
 def show_point_clouds(clouds=[]):
     open3d_clouds = []
     for cloud in clouds:
@@ -116,34 +152,49 @@ def show_point_clouds(clouds=[]):
         new_cloud.points = o3d.utility.Vector3dVector(cloud)
         open3d_clouds.append(new_cloud)
 
-    for cloud in open3d_clouds:
-        color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
-        # print(f'Color: {color}')
-        cloud.paint_uniform_color(color)
+    # vis = o3d.visualization.Visualizer()
+    # vis.create_window()
+    colors = np.array([[252, 15, 192], [0, 150, 255]], dtype=np.float64) # bright pink, bright blue
+    # color2 = [0, 150, 255] # bright blue
+    # colors = colors/255
+    # color2 = color2/255
+
+    for i, cloud in enumerate(open3d_clouds):
+        # color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
+        # color = [1,1,1]
+        # color = np.array(color, dtype=np.float32)
+        colors[i] = colors[i]/255
+        # print(f'Color: {colors[i]} {type(colors[i])}')
+        cloud.paint_uniform_color(colors[i])
     
     try:
         print('trying draw geometries')
+        
         o3d.visualization.draw_geometries(
             open3d_clouds,
-            zoom = 0.4459,
-            front=[0.9288, -0.2951, -0.2242],
-            lookat=[1.6784, 2.0612, 1.4451],
-            up=[-0.3402, -0.9189, -0.1996]
+            # zoom = 0.4459,
+            # front=[0.9288, -0.2951, -0.2242],
+            # lookat=[1.6784, 2.0612, 1.4451],
+            # up=[-0.3402, -0.9189, -0.1996]
         )
+        # vis.add_geometry(cloud)
+        # vis.poll_events()
+        # vis.update_renderer()
+        # time.sleep(0.005)
     except Exception as e:
         print(f'issue with open3d: {e}')
 
-    try:
-        print('try plotly')
-        o3d.visualization.draw_plotly(
-            open3d_clouds,
-            zoom = 0.4459,
-            front=[0.9288, -0.2951, -0.2242],
-            lookat=[1.6784, 2.0612, 1.4451],
-            up=[-0.3402, -0.9189, -0.1996]
-        )
-    except Exception as e:
-        print(f'issue with open3d: {e}')
+    # try:
+    #     print('try plotly')
+    #     o3d.visualization.draw_plotly(
+    #         open3d_clouds,
+    #         zoom = 0.4459,
+    #         front=[0.9288, -0.2951, -0.2242],
+    #         lookat=[1.6784, 2.0612, 1.4451],
+    #         up=[-0.3402, -0.9189, -0.1996]
+    #     )
+    # except Exception as e:
+    #     print(f'issue with open3d: {e}')
 
 def show_point_cloud_panda(clouds:list):
     print('showing point cloud')
@@ -151,7 +202,9 @@ def show_point_cloud_panda(clouds:list):
     colors = []
     for cloud in clouds:
         # convert array to float32 then uint32 to ensure viewer processes correctly
-        cloud = np.array(cloud, np.float32)
+        print(type(cloud))
+        cloud = np.array(cloud, np.float16)#.astype(np.uint32)
+        # cloud = np.array(cloud, dtype=np.uint32)
         cloud = np.view(dtype=np.uint32)    
 
         color = [random.randrange(0,100)/100, random.randrange(0,100)/100, random.randrange(0,100)/100] 
