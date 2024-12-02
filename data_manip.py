@@ -11,7 +11,7 @@
 import os
 import h5py as hp
 import numpy as np
-import open3d as o3d
+# import open3d as o3d
 import random 
 from stl import mesh
 # import torch
@@ -19,8 +19,8 @@ from stl import mesh
 from panda3d_viewer import Viewer, ViewerConfig
 
 # folder is located:
-data_dir = "/mnt/d/school/dataset/h5_files/main_split"
-# data_dir = "data"
+# data_dir = "/mnt/d/school/dataset/h5_files/main_split"
+data_dir = "data"
 file = 'objectdataset_augmented25rot.h5'
 # file = 'objectdataset_augmentedrot_scale75.h5'
 test_file = f'{data_dir}/test_{file}'
@@ -128,21 +128,35 @@ def input_dataloader(data, labels, batch_size=16):
 
     return dataloader
 
-def one_hot_encode(test_labels):
+def one_hot_encode(test_labels, train_data):
+    
+    # labels = np.expand_dims(labels, -1)
+
     background = np.zeros(test_labels.shape)
     background[test_labels==1] = 1
 
     foreground = np.zeros(test_labels.shape)
     foreground[test_labels==0] = 1
-
-    print(f'num background in testmask: {(test_labels==1).sum()}')
-    print(f'num foreground in testmask: {(test_labels==0).sum()}')
-
-    print(f'num background in background: {(background==1).sum()}')
-    print(f'num foreground in foreground: {(foreground==1).sum()}')
     print(f'shapes: {test_labels.shape} {background.shape} {foreground.shape}')
 
-    return [foreground, background]
+    labels = np.squeeze(train_data).copy()
+    print('label shape', labels.shape)
+    labels = np.hstack((labels, background, foreground))
+    # labels[3] = np.array([background, foreground])
+    print('labels reshaped', labels.shape)
+    # print(f'num background in testmask: {(test_labels==1).sum()}')
+    # print(f'num foreground in testmask: {(test_labels==0).sum()}')
+
+    # print(f'num background in background: {(background==1).sum()}')
+    # print(f'num foreground in foreground: {(foreground==1).sum()}')
+    # print(f'shapes: {test_labels.shape} {background.shape} {foreground.shape}')
+
+    # labels = np.array([foreground, background])
+    # # print(labels.shape)
+    # labels = np.reshape(labels, (labels.shape[1], labels.shape[2], labels.shape[0]))
+    # print(f'reshaped onehot labels: {labels.shape}')
+
+    return labels
 
 def show_point_clouds(clouds=[]):
     open3d_clouds = []
