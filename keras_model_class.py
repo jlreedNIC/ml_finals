@@ -108,15 +108,15 @@ class Keras_Custom_Model():
     def custom_CategoricalCrossentropy(self, y_true, y_pred):
         # y true must be one hot encoded
         # y pred is of shape (batch, 2048, 2, 2)
-        y_true = y_true.numpy()
+        # y_true = y_true.numpy()
         y_true = y_true[:,:,0]
-        y_pred = y_pred.numpy()
+        # y_pred = y_pred.numpy()
         pred_prob = []
-        for i, obj in enumerate(y_pred):
+        for i in range(len(y_pred)):
             batch_prob = []
-            for j, point in enumerate(obj):
-                fg = obj[j][1][1]
-                bg = obj[j][1][0]
+            for j in range(len(y_pred[0])):
+                fg = y_pred[i][j][1][1]
+                bg = y_pred[i][j][1][0]
                 batch_prob.append([bg, fg])
             pred_prob.append(batch_prob)
 
