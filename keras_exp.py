@@ -210,7 +210,7 @@ for batch in batch_sizes:
     for epoch in epochs:
         for opt in optimizer:
             # compile model
-            model.compile_model(opt, keras.losses.CategoricalCrossentropy())
+            model.compile_model(opt, model.custom_CategoricalCrossentropy())
             for valid in validation_split:
                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
