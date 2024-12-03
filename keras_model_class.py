@@ -77,14 +77,50 @@ class Keras_Custom_Model():
     
     def predict_model(self, data):
         predictions = self.model.predict(data)
-        print(f'pred shape: {predictions.shape}')
-        predictions = np.reshape(predictions, (2048,2))
-        print(f'pred shape: {predictions.shape}')
+        # print(f'pred shape: {predictions.shape}')
+        predictions = np.reshape(predictions, (2048,2,2))
+        # print(f'pred shape: {predictions.shape}')
+        # print(predictions)
         # print('num backgrounds', (predictions==1).sum())
-        predictions = np.argmax(predictions, axis=1)
-        # predictions = np.max(predictions, axis=1)
-        print(f'pred shape after argmax: {predictions.shape}')
 
+        # ------------
+        # for predictions in cnn
+        pred = []
+        for i in range(len(predictions)):
+            fg = (predictions[i][0][1] + predictions[i][1][1]) / 2
+            bg = (predictions[i][0][0] + predictions[i][1][0]) / 2
+            p = np.argmax([bg, fg])
+            pred.append(p)
+            # break
+        predictions = np.array(pred)
+        # ---------
+
+        
+        print(predictions.shape)
+        # predictions = np.argmax(predictions, axis=1)
+        # print(predictions)
+        # predictions = np.argmax(predictions, axis=1)
+        # print(f'pred shape after argmax: {predictions.shape}')
+        # print(predictions[:0])
         print('num backgrounds in prediction', (predictions==1).sum())
         return predictions
+    
+    def custom_CategoricalCrossentropy(y_true, y_pred):
+        # y true must be one hot encoded
+        # y pred is of shape (batch, 2048, 2, 2)
+        pred_prob = []
+        for i, obj in enumerate(y_pred):
+            batch_prob = []
+            for j, point in enumerate(obj):
+                fg = obj[j][1][1]
+                bg = obj[j][1][0]
+                batch_prob.append([bg, fg])
+            pred_prob.append(batch_prob)
+
+        pred_prob = np.array(pred_prob)
+
+        loss_fn = keras.losses.CategoricalCrossentropy()
+        loss_val = loss_fn(y_true, pred_prob)
+
+        return loss_val
 
