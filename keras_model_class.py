@@ -58,7 +58,7 @@ class Keras_Custom_Model():
             batch_size=batch_size,
             epochs=epochs,
             callbacks=self.callback_funcs,
-            validation_split=validation
+            validation_split=validation,
         )
 
         return history
@@ -105,9 +105,12 @@ class Keras_Custom_Model():
         print('num backgrounds in prediction', (predictions==1).sum())
         return predictions
     
-    def custom_CategoricalCrossentropy(y_true, y_pred):
+    def custom_CategoricalCrossentropy(self, y_true, y_pred):
         # y true must be one hot encoded
         # y pred is of shape (batch, 2048, 2, 2)
+        y_true = y_true.numpy()
+        y_true = y_true[:,:,0]
+        y_pred = y_pred.numpy()
         pred_prob = []
         for i, obj in enumerate(y_pred):
             batch_prob = []
