@@ -21,6 +21,11 @@ class Keras_Custom_Model():
         self.test_score = 0
 
     def load_keras_model(self, filename:str):
+        """
+        Load a keras model from a file
+
+        :param filename: string containing path to keras model
+        """
         if os.path.exists(filename):
             self.model = keras.models.load_model(filename)
         else:
@@ -28,6 +33,11 @@ class Keras_Custom_Model():
             self.model = None
 
     def build_callbacks(self, checkpoint_file=None):
+        """
+        Implement early stopping and saving checkpoints for model
+
+        :param checkpoint_file: filename to save model checkpoint to, defaults to None
+        """
         if checkpoint_file is None:
             checkpoint_file = f"./model_checkpoints/keras_checkpoint_{self.model_name}.keras"
         else:
@@ -44,6 +54,13 @@ class Keras_Custom_Model():
         self.callback_funcs = [callback_early_stopping, callback_checkpoint]
 
     def compile_model(self, optimizer='adam', loss=None, metrics=['accuracy']):
+        """
+        Compile model given parameters
+
+        :param optimizer: optimizer to use with model, defaults to 'adam'
+        :param loss: loss function, defaults to None
+        :param metrics: list of metrics to track, defaults to ['accuracy']
+        """
         if loss is None:
             loss = 'sparse_categorical_crossentropy'
         self.model.compile(
@@ -53,6 +70,16 @@ class Keras_Custom_Model():
         )
 
     def train_model(self, train_data, train_labels, batch_size=16, epochs=100, validation=.1):
+        """
+        train a keras model
+
+        :param train_data: training data, numpy list
+        :param train_labels: training labels, numpy list
+        :param batch_size: batch size, int, defaults to 16
+        :param epochs: number of epochs to train for, int, defaults to 100
+        :param validation: validation split to perform, between 0 and 1, defaults to .1
+        :return: history object
+        """
         history = self.model.fit(
             train_data, train_labels,
             batch_size=batch_size,
@@ -64,6 +91,15 @@ class Keras_Custom_Model():
         return history
 
     def score_model(self, train_data, train_labels, test_data, test_labels):
+        """
+        evaluate the model's accuracy and loss on both train set and test set
+
+        :param train_data: training data, numpy list
+        :param train_labels: training labels, numpy list
+        :param test_data: test data, numpy list
+        :param test_labels: test labels, numpy list
+        :return: train score loss and accuracy, test score loss and accuracy
+        """
         self.train_score = self.model.evaluate(x=train_data, y=train_labels, verbose=0)
         self.test_score = self.model.evaluate(x=test_data, y=test_labels, verbose=0)
 
@@ -73,39 +109,66 @@ class Keras_Custom_Model():
         return self.train_score, self.test_score
 
     def save_model(self):
+        """
+        save model to a file
+        """
         self.model.save(f'models/{self.model_name}.keras')
     
     def predict_model(self, data):
-        predictions = self.model.predict(data)
-        # print(f'pred shape: {predictions.shape}')
-        predictions = np.reshape(predictions, (2048,2,2))
-        # print(f'pred shape: {predictions.shape}')
-        # print(predictions)
-        # print('num backgrounds', (predictions==1).sum())
+        """
+        perform a prediction for a single object
 
-        # ------------
-        # for predictions in cnn
-        pred = []
-        for i in range(len(predictions)):
-            fg = (predictions[i][0][1] + predictions[i][1][1]) / 2
-            bg = (predictions[i][0][0] + predictions[i][1][0]) / 2
-            p = np.argmax([bg, fg])
-            pred.append(p)
-            # break
-        predictions = np.array(pred)
+        :param data: object data of shape (1, 2048, 3)
+        :return: list of predictions in shape (2048,)
+        """
+        predictions = self.model.predict(data)
+        print(f'pred shape: {predictions.shape}')
+        
+        # # -----------
+        # # predictions in pointnet
+        # # shape is (batch, 2048, 16)
+        # predictions = np.reshape(predictions, (2048, 16))
+        # predictions = np.argmax(predictions, axis=-1)
+        # print(f'pred shape: {predictions.shape}')
+        # # print(predictions)
+        # # print('num backgrounds', (predictions==1).sum())
+        # # ----------
+
         # ---------
+        # predictions for fcnn
+        # shape (batch, 2048, 2)
+        predictions = np.reshape(predictions, (2048, 2))
+        predictions = np.argmax(predictions, axis=-1)
+        print(f'pred shape: {predictions.shape}')
+        # ------------
+
+        # # ------------
+        # # for predictions in cnn
+        # predictions = np.reshape(predictions, (2048,2,2))
+        # pred = []
+        # for i in range(len(predictions)):
+        #     # fg = (predictions[i][0][1] + predictions[i][1][1]) / 2
+        #     # bg = (predictions[i][0][0] + predictions[i][1][0]) / 2
+        #     fg = predictions[i][1][1]
+        #     bg = predictions[i][1][0]
+        #     p = np.argmax([bg, fg])
+        #     pred.append(p)
+        #     # break
+        # predictions = np.array(pred)
+        # # ---------
 
         
-        print(predictions.shape)
-        # predictions = np.argmax(predictions, axis=1)
-        # print(predictions)
-        # predictions = np.argmax(predictions, axis=1)
-        # print(f'pred shape after argmax: {predictions.shape}')
-        # print(predictions[:0])
         print('num backgrounds in prediction', (predictions==1).sum())
         return predictions
     
     def custom_CategoricalCrossentropy(self, y_true, y_pred):
+        """
+        Not used. Attempt for cnn evaluation.
+
+        :param y_true: _description_
+        :param y_pred: _description_
+        :return: _description_
+        """
         # y true must be one hot encoded
         # y pred is of shape (batch, 2048, 2, 2)
         # y_true = y_true.numpy()

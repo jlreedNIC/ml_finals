@@ -25,12 +25,24 @@ import os
 import numpy as np
 
 def load_all_data():
+    """
+    load training and test data from given files
+    labels are classification labels while masks are point classification
+
+    :return: training data, labels, masks and test data, labels, mask
+    """
     train_data, train_label, train_mask = load_data(train_file)
     test_data, test_label, test_mask = load_data(test_file)
 
     return train_data, train_label, train_mask, test_data, test_label, test_mask
 
 def build_pointnet_model(filepath=None):
+    """
+    Try to load a PointNet model from the given filepath. Otherwise build a model with the PointNet architecture
+
+    :param filepath: path to model, defaults to None
+    :return: model
+    """
     if filepath is not None and os.path.exists(filepath):
         print(f'Loading model from {filepath}')
         model = keras.models.load_model(filepath)
@@ -83,33 +95,6 @@ def build_cnn_model(num_conv_layers, input_size, output_size):
         keras.layers.Conv2D(output_size, kernel_size=(1,1), activation='softmax', padding='same')
     ]
 
-    # layers = []
-
-    # # input layer
-    # layers.append(keras.Input(shape=input_size))
-
-    # # convolutional layer
-    # for i in range(0, num_conv_layers):
-    #     layers.append(keras.layers.Conv2D(64, kernel_size=(3,1), activation='relu', padding='same'))
-    #     # layers.append(keras.layers.Conv2D(32, kernel_size=(3,3), activation='relu', padding='same'))
-    #     layers.append(keras.layers.MaxPool2D(pool_size=(2,2), padding="same"))
-    
-    # for i in range(0, num_conv_layers):
-    #     layers.append(keras.layers.UpSampling2D(size=(2,1)))
-    #     # layers.append(keras.layers.Conv2DTranspose(32, kernel_size=(3,3), activation='relu', padding='same'))
-    #     layers.append(keras.layers.Conv2DTranspose(64, kernel_size=(3,1), activation='relu', padding='same'))
-    
-    # # layers.append(keras.layers.Conv1D(64, kernel_size=3, activation='relu', padding='same'))
-    # # layers.append(keras.layers.Conv1D(64, kernel_size=3, activation='relu', padding='same'))
-    # # layers.append(keras.layers.Conv1D(output_size, kernel_size=3, activation='softmax', padding='same'))
-
-    # # transform to NN
-    # layers.append(keras.layers.Conv2D(output_size, kernel_size=(1,1), activation='softmax', padding='same'))
-    # # layers.append(keras.layers.Flatten())
-    # # layers.append(keras.layers.Dropout(.5))
-    # # layers.append(keras.layers.Dense(2048, activation='relu'))
-    # # layers.append(keras.layers.Dense(output_size, activation='softmax'))
-
     model = keras.models.Sequential(layers)
     model.summary()
 
@@ -154,6 +139,14 @@ def build_fcnn_model(num_layers:int, num_nodes:list, activation:str, input_size,
     return model
 
 def save_data(filename, model_name, scores, parameters):
+    """
+    save results of experiment to file
+
+    :param filename: file to save to
+    :param model_name: name of model run
+    :param scores: training and test scores
+    :param parameters: parameters used in experiment, list of strings
+    """
     with open(filename, 'w') as f:
         f.write(f'Model,{model_name},\n')
         f.write(f'Parameters,\n')
@@ -165,8 +158,6 @@ def save_data(filename, model_name, scores, parameters):
 
 # ------ run experiments -------
 train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
-
-
 print(train_data.shape)
 print(train_mask.shape)
 
@@ -184,9 +175,6 @@ train_data, test_data = data_prep_cnn(train_data, test_data)    # expand dims fo
 train_onehot_labels = one_hot_encode(train_mask)                # one hot encode train labels
 test_onehot_labels = one_hot_encode(test_mask)                  # one hot encode test labels
 
-# train_onehot_labels = np.reshape(train_onehot_labels, (2048, 1, 2))
-
-# print(train_onehot_labels.shape)
 model = build_cnn_model(
     2,
     (2048, 3,1), output_size=2)

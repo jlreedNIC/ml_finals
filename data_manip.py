@@ -11,14 +11,14 @@
 import os
 import h5py as hp
 import numpy as np
-# import open3d as o3d
+import open3d as o3d
 import random 
 from stl import mesh
 # import torch
 # import torch.utils as tu
 from panda3d_viewer import Viewer, ViewerConfig
 
-# folder is located:
+# folder location for different machines:
 data_dir = "/mnt/d/school/dataset/h5_files/main_split"
 # data_dir = "data"
 file = 'objectdataset_augmented25rot.h5'
@@ -26,9 +26,7 @@ file = 'objectdataset_augmented25rot.h5'
 test_file = f'{data_dir}/test_{file}'
 train_file = f'{data_dir}/training_{file}'
 
-# print(f'test: {test_file}')
-# print(f'train: {train_file}')
-
+# class labels
 class_dict = {
     '0': 'bag',
     '1': 'bin',
@@ -48,6 +46,11 @@ class_dict = {
 }
 
 def investigate_files(dir):
+    """
+    function to investigate initial folder of files
+
+    :param dir: directory of files
+    """
     print("\nStarting file investigation...")
     file_list = os.listdir(dir)
     print(file_list)
@@ -60,6 +63,11 @@ def investigate_files(dir):
     print("File investigation concluded.\n")
 
 def investigate_data(filename):
+    """
+    print out data contained in single h5 file as well as shape of data
+
+    :param filename: path to single file
+    """
     print("\nStarting data investigation...")
     f = hp.File(filename, 'r')
     keys = f.keys()
@@ -78,6 +86,12 @@ def investigate_data(filename):
     print("Data investigation concluded.\n")
 
 def load_data(filename):
+    """
+    load data from h5 file into numpy arrays. Change labels in mask to foreground/background
+
+    :param filename: path to h5 file
+    :return: data, labels, mask
+    """
     print(f"Starting load data for {filename}")
     with hp.File(filename) as f:
         data = np.array(f['data'][:])
@@ -94,6 +108,13 @@ def load_data(filename):
     return data, labels, mask
 
 def load_points_from_stl(filename, round=False):
+    """
+    Load points from stl file into numpy array. Remove duplicates. Can round to 2 decimal places if desired
+
+    :param filename: path to stl file
+    :param round: whether or not to round, defaults to False
+    :return: numpy list of points
+    """
     print('Loading stl file...')
     model_mesh = mesh.Mesh.from_file(filename)
     point_cloud = np.copy(model_mesh.data['vectors'])
@@ -120,6 +141,15 @@ def load_points_from_stl(filename, round=False):
     return point_cloud
 
 def input_dataloader(data, labels, batch_size=16):
+    """
+    put data into dataloader for pytorch model
+    NOT USED
+
+    :param data: _description_
+    :param labels: _description_
+    :param batch_size: _description_, defaults to 16
+    :return: _description_
+    """
     # put data into dataloader for pytorch implementation
     inputs = torch.tensor(data)
     outputs = torch.LongTensor(labels)
@@ -129,7 +159,14 @@ def input_dataloader(data, labels, batch_size=16):
     return dataloader
 
 def one_hot_encode(test_labels):
-    
+    """
+    one hot encode labels
+    also reshapes to (batch,2048,2,2) to be used in CNN
+    duplicates one hot encoded labels to do so
+
+    :param test_labels: single list of labels, background =1 foreground=0
+    :return: one hot encoded labels of foreground background
+    """
     # labels = np.expand_dims(labels, -1)
 
     background = np.zeros(test_labels.shape)
@@ -138,12 +175,12 @@ def one_hot_encode(test_labels):
     foreground = np.zeros(test_labels.shape)
     foreground[test_labels==0] = 1
 
-    print(f'num background in testmask: {(test_labels==1).sum()}')
-    print(f'num foreground in testmask: {(test_labels==0).sum()}')
+    # print(f'num background in testmask: {(test_labels==1).sum()}')
+    # print(f'num foreground in testmask: {(test_labels==0).sum()}')
 
-    print(f'num background in background: {(background==1).sum()}')
-    print(f'num foreground in foreground: {(foreground==1).sum()}')
-    print(f'shapes: {test_labels.shape} {background.shape} {foreground.shape}')
+    # print(f'num background in background: {(background==1).sum()}')
+    # print(f'num foreground in foreground: {(foreground==1).sum()}')
+    # print(f'shapes: {test_labels.shape} {background.shape} {foreground.shape}')
 
     labels = np.array([background, foreground])
     labels = np.reshape(labels, (labels.shape[1], labels.shape[2], labels.shape[0]))
@@ -152,11 +189,16 @@ def one_hot_encode(test_labels):
     # make labels match expected output
     labels = np.expand_dims(labels, axis = -1)
     labels = np.tile(labels, (1,1,1,2))
-    print(f'labels shape: {labels.shape}')
+    # print(f'labels shape: {labels.shape}')
 
     return labels
 
 def show_point_clouds(clouds=[]):
+    """
+    shows point clouds with pink and blue colors using open3d library
+
+    :param clouds: list of point clouds to show, defaults to []
+    """
     open3d_clouds = []
     for cloud in clouds:
         new_cloud = o3d.geometry.PointCloud()
@@ -192,6 +234,12 @@ def show_point_clouds(clouds=[]):
     #     print(f'issue with open3d: {e}')
 
 def show_point_cloud_panda(clouds:list):
+    """
+    show list of point clouds using panda3d viewer package
+    NOT USED
+
+    :param clouds: _description_
+    """
     print('showing point cloud')
 
     colors = []
