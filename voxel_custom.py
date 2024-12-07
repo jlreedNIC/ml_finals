@@ -23,7 +23,7 @@ class Custom_Voxel():
             for pt in new_points:
                 self.point_list.append(pt)
 
-            if self.value != 1:
+            if self.value == 0:
                 self.value = 1
                 self.isEmpty = False
     
@@ -33,7 +33,7 @@ class Custom_Voxel():
             for pt in points:
                 self.point_list.remove(pt)
             
-            if len(self.point_list) == 0:
+            if len(self.point_list) != 0:
                 self.value = 0
                 self.isEmpty = True
     
