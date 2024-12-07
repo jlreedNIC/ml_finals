@@ -65,6 +65,24 @@ class Custom_Voxel():
     
     def __get__(self, instance, owner):
         return self.value
+    
+    def __add__(self, object):
+        if type(object) != type(self):
+            print(f'Cannot add object type {type(object)} to type {type(self)}')
+            exit(1)
+
+        if self.voxel_size != object.voxel_size:
+            print(f'Voxel size must be the same: {self.voxel_size} != {object.voxel_size}')
+        new_voxel = Custom_Voxel(vox_size=self.voxel_size)
+        new_voxel.add_points(self.point_list)
+        new_voxel.add_points(object.point_list)
+        new_voxel.value = self.value + object.value
+
+        return new_voxel
+    
+    # def __mul__(self, value):
+    #     self.value *= value
+    #     return self
 
 import numpy as np
 def main():
@@ -86,6 +104,15 @@ def main():
 
     print(testing[0])
     print((testing==1).sum())
+
+    vox2 = Custom_Voxel()
+    vox2.add_points([[1,2,3],[2,3,5],[5,7,8]])
+
+    vox3 = vox + vox2
+    print('vox3', vox3)
+    vox3.show_points()
+
+
 
 if __name__ == "__main__":
     main()
