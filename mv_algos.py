@@ -10,6 +10,7 @@ import cv2 as cv
 from data_manip import load_data, test_file, show_point_clouds
 import numpy as np
 import open3d as o3d
+from voxel_custom import Custom_Voxel
 
 test_data, test_labels, test_mask = load_data(test_file)
 
@@ -57,11 +58,65 @@ def create_occupancy_grid(point_cloud, voxel_size):
 
     return occupancy_grid
 
-def show_point_cloud_from_grid(occupancy_grid, voxel_size):
-    # approximate a new point cloud from occupancy grid
+def create_occupancy_grid_of_voxels(point_cloud, voxel_size):
+    # get bounds of x, y, z
+    min_x, max_x = get_bounds_along_axis(point_cloud, 0)
+    min_y, max_y = get_bounds_along_axis(point_cloud, 1)
+    min_z, max_z = get_bounds_along_axis(point_cloud, 2)
+
+    # remove negative numbers from point cloud
+    point_cloud[:,0] -= min_x
+    point_cloud[:,1] -= min_y
+    point_cloud[:,2] -= min_z
+
+    # get new bounds of x,y,z
+    min_x, max_x = get_bounds_along_axis(point_cloud, 0)
+    min_y, max_y = get_bounds_along_axis(point_cloud, 1)
+    min_z, max_z = get_bounds_along_axis(point_cloud, 2)
+
+    # turn to occupancy voxel grid
+    num_x_voxels = int(max_x / voxel_size) + 1
+    num_y_voxels = int(max_y / voxel_size) + 1
+    num_z_voxels = int(max_z / voxel_size) + 1
+
+    # create blank occupancy grid
+    vox_grid = [[[Custom_Voxel(voxel_size) for i in range(num_z_voxels)] for j in range(num_y_voxels)] for k in range(num_x_voxels)]
+    # occupancy_grid = np.zeros((num_x_voxels, num_y_voxels, num_z_voxels))
+
+    print(vox_grid[8][2][1])
+    # loop through voxel grid and assign 1 if there is a point in there
+    for point in point_cloud:
+        # convert point to voxel index
+        voxel_index = np.array(point/voxel_size, dtype=int)
+        # print(voxel_index)
+        # occupancy_grid[voxel_index[0], voxel_index[1], voxel_index[2]] = 1
+        vox_grid[voxel_index[0]][voxel_index[1]][voxel_index[2]].add_points([point])
+
+
+    # print(f'{(occupancy_grid==1).sum()} occupied voxels in grid')
+    # print(f'{(occupancy_grid==0).sum()} unoccupied voxels in grid')
+
+    occupancy_grid = np.array(vox_grid)
+    # print(occ_grid)
+    print(f'{(occupancy_grid==1).sum()} occupied voxels in grid')
+    print(f'{(occupancy_grid==0).sum()} unoccupied voxels in grid')
+
+    return occupancy_grid
+
+def get_point_cloud(occupancy_grid):
+    # occupancy grid is 2d numpy array of voxels
+    point_cloud = []
+    for i in range(len(occupancy_grid)):
+        for j in range(len(occupancy_grid[i])):
+            for k in range(len(occupancy_grid[i][j])):
+                point_cloud.append(occupancy_grid[i][j][k].point_list)
+    
+    return point_cloud
+
+def calculate_point_cloud(occupancy_grid):
+    # occupancy grid is 2d numpy array of values: 1 is there is a point there
     point_clouds = []
     for grid in occupancy_grid:
-        # print(f'nonzero: {(grid!=0).sum()}')
         points = np.zeros(((grid!=0).sum(), 3))
         point_idx = 0
         for i in range(len(grid)):
@@ -77,6 +132,10 @@ def show_point_cloud_from_grid(occupancy_grid, voxel_size):
                         point_idx += 1
         # print(points)
         point_clouds.append(points)
+
+def show_point_cloud_from_grid(occupancy_grid, voxel_size):
+    point_clouds = calculate_point_cloud(occupancy_grid)
+    # point_clouds = get_point_cloud(occupancy_grid)
     # print(point_clouds)
     # convert numpy list of points to open3d vector and open3d voxelgrid and show
     # paint one color
@@ -86,14 +145,14 @@ def show_point_cloud_from_grid(occupancy_grid, voxel_size):
     o3d_voxel_grid = []
     i=0
     for pc in point_clouds:
-        pc = o3d.geometry.PointCloud()
+        points = o3d.geometry.PointCloud()
         # point_cloud.points = o3d.utility.Vector3dVector(test_data[0])
-        pc.points = o3d.utility.Vector3dVector(points)
+        points.points = o3d.utility.Vector3dVector(pc)
         # pc.scale( 1 / np.max(pc.get_max_bound() - pc.get_min_bound()), center = pc.get_center())
-        pc.paint_uniform_color(colors[i])
+        points.paint_uniform_color(colors[i])
         print(colors[i])
 
-        voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pc, voxel_size)
+        voxel_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(points, voxel_size)
         
         i += 1
         o3d_voxel_grid.append(voxel_grid)
@@ -104,7 +163,8 @@ def show_point_cloud_from_grid(occupancy_grid, voxel_size):
 
 def apply_3d_convolution_filter(occupancy_grid, filter_3d):
     new_array = np.zeros(occupancy_grid.shape)
-    filter_size = (len(filter_3d) - 1) / 2
+    filter_size = int((len(filter_3d) - 1) / 2)
+    print(filter_size, len(occupancy_grid))
     for i in range(1, len(occupancy_grid)-filter_size):
         for j in range(1, len(occupancy_grid[i])-filter_size):
             for k in range(1, len(occupancy_grid[i][j])-filter_size):
@@ -119,7 +179,7 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
                             khat = k+(n-filter_size)
                             # print(f'k {k} n {n} khat {khat}')
                             # print(f'len {len(occupancy_grid[j])}')
-                            cur_occ_val = occupancy_grid[ihat][jhat][khat]
+                            cur_occ_val = occupancy_grid[ihat][jhat][khat].value
                             cur_sobel_val = filter_3d[l][m][n]
                             # print(f' sobel {sobel_3dx_filter[l][m][n]} * occ {occupancy_grid[ihat][jhat][khat]} = {sobel_3dx_filter[l][m][n] * occupancy_grid[ihat][jhat][khat]}')
                             # print(f'      value {value} + res {sobel_3dx_filter[l][m][n] * occupancy_grid[ihat][jhat][khat]} = {value + sobel_3dx_filter[l][m][n] * occupancy_grid[ihat][jhat][khat]}')
@@ -140,7 +200,8 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
 # ------ main ----------
 # voxel_size = .015
 voxel_size = .05
-occupancy_grid = create_occupancy_grid(point_cloud, voxel_size)
+occupancy_grid = create_occupancy_grid_of_voxels(point_cloud, voxel_size)
+# occupancy_grid = create_occupancy_grid(point_cloud, voxel_size)
 # print(occupancy_grid)
 print(occupancy_grid.shape)
 
@@ -159,9 +220,9 @@ sobel_3dz_filter = [
 # 3d convolution
 
 sobel_z = apply_3d_convolution_filter(occupancy_grid, sobel_3dz_filter)
-show_point_cloud_from_grid([occupancy_grid], voxel_size)
-show_point_cloud_from_grid([sobel_z], voxel_size)
-show_point_cloud_from_grid([occupancy_grid, sobel_z], voxel_size) # this isn't showing 2 grids at once
+# show_point_cloud_from_grid([occupancy_grid], voxel_size)
+# show_point_cloud_from_grid([sobel_z], voxel_size)
+# show_point_cloud_from_grid([occupancy_grid, sobel_z], voxel_size) # this isn't showing 2 grids at once
 
 
 
