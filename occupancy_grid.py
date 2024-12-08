@@ -11,7 +11,7 @@ import numpy as np
 
 class Occupancy_Grid():
     def __init__(self, point_cloud=None, voxel_size=.01):
-        print(f'Initializing occupancy grid...')
+        # print(f'Initializing occupancy grid...')
         self.grid = None
         self.shape = None
         self.voxel_size = voxel_size
@@ -29,14 +29,14 @@ class Occupancy_Grid():
     def init_grid(self, shape, voxel_size):
         self.voxel_size = voxel_size
         self.shape = shape
-        print(f'Occupancy grid is of size: {self.shape}')
+        # print(f'Occupancy grid is of size: {self.shape}')
 
         # initialize a blank occupancy grid of size shape
         self.grid = [[[Custom_Voxel(self.voxel_size) for i in range(self.shape[2])] for j in range(self.shape[1])] for k in range(self.shape[0])]
     
     def create_occupancy_grid(self, point_cloud, voxel_size):
         # creating occupancy grid from point cloud
-        print(f'Creating occupancy grid for point cloud...')
+        # print(f'Creating occupancy grid for point cloud...')
         # self.voxel_size = voxel_size
         self._get_bounds_point_cloud(point_cloud)
         point_cloud[:,0] -= self._minx
@@ -71,8 +71,8 @@ class Occupancy_Grid():
         for i in range(self.shape[0]):
             for j in range(self.shape[1]):
                 for k in range(self.shape[2]):
-                    point_cloud += self.grid[i][j][k]
-        
+                    point_cloud += self.grid[i][j][k].point_list
+        point_cloud = np.array(point_cloud)
         return point_cloud
 
     def _get_bounds_point_cloud(self, point_cloud):
@@ -87,6 +87,21 @@ class Occupancy_Grid():
     
     def __getitem__(self, keyval):
         return self.grid[keyval]
+    
+    def __add__(self, object):
+        if type(object) != type(self):
+            print(f'Cannot add object type {type(object)} to type {type(self)}')
+            exit(1)
+        
+        if self.voxel_size != object.voxel_size:
+            print(f'Voxel size must be the same: {self.voxel_size} != {object.voxel_size}')
+
+        new_grid = Occupancy_Grid()
+        new_grid.init_grid(self.shape, self.voxel_size)
+        new_grid.grid = np.add(self.grid, object.grid)
+        return new_grid
+        
+
 
 
 def main():
