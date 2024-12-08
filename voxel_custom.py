@@ -74,11 +74,17 @@ class Custom_Voxel():
         if self.voxel_size != object.voxel_size:
             print(f'Voxel size must be the same: {self.voxel_size} != {object.voxel_size}')
         new_voxel = Custom_Voxel(vox_size=self.voxel_size)
-        new_voxel.add_points(self.point_list)
-        new_voxel.add_points(object.point_list)
         new_voxel.value = self.value + object.value
+        if new_voxel.value != 0:
+            new_voxel.add_points(self.point_list)
+            new_voxel.add_points(object.point_list)
+        
 
         return new_voxel
+    
+    def abs(self):
+        self.value = np.abs(self.value)
+        return
     
     # def __mul__(self, value):
     #     self.value *= value
