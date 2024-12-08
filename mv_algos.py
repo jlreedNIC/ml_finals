@@ -13,10 +13,16 @@ import open3d as o3d
 from voxel_custom import Custom_Voxel
 from occupancy_grid import Occupancy_Grid
 
-test_data, test_labels, test_mask = load_data(test_file)
-point_cloud = test_data[0]
+# test_data, test_labels, test_mask = load_data(test_file)
+# point_cloud = test_data[0]
 
-# point_cloud = load_points_from_stl("data/tape.stl")
+point_cloud = load_points_from_stl("data/tape.stl")
+# perform random sampling of object
+indices = np.array(range(len(point_cloud)))
+indices = np.random.choice(indices, 2048, False)
+object_model = point_cloud[indices]
+print(f"from {point_cloud.shape} to {object_model.shape}")
+point_cloud = object_model
 
 
 def show_point_cloud_from_grids(grids:list):
@@ -73,7 +79,7 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
 
 # ------ main ----------
 # voxel_size = .015
-voxel_size = .01
+voxel_size = .05
 print('creating occupancy grid')
 occupancy_grid = Occupancy_Grid(point_cloud, voxel_size)
 print(f'number of voxels: {occupancy_grid.shape}')
@@ -118,11 +124,13 @@ sobel_3dx_filter = [
 sobel_z = apply_3d_convolution_filter(occupancy_grid, sobel_3dz_filter)
 sobel_y = apply_3d_convolution_filter(occupancy_grid, sobel_3dy_filter)
 sobel_x = apply_3d_convolution_filter(occupancy_grid, sobel_3dx_filter)
-# show_point_cloud_from_grids([occupancy_grid, sobel_z], voxel_size) # this isn't showing 2 grids at once
-# show_point_cloud_from_grids([occupancy_grid, sobel_y], voxel_size) # this isn't showing 2 grids at once
-# show_point_cloud_from_grids([occupancy_grid, sobel_x], voxel_size) # this isn't showing 2 grids at once
+# show_point_cloud_from_grids([occupancy_grid, sobel_z]) # this isn't showing 2 grids at once
+# show_point_cloud_from_grids([occupancy_grid, sobel_y]) # this isn't showing 2 grids at once
+# show_point_cloud_from_grids([occupancy_grid, sobel_x]) # this isn't showing 2 grids at once
 
-
+sobel_x.abs()
+sobel_y.abs()
+sobel_z.abs()
 combined_sobels = sobel_x + sobel_y + sobel_z
 # combined_sobels.threshold_grid(0)
 print(combined_sobels.shape)
