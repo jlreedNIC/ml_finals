@@ -11,11 +11,12 @@ from data_manip import load_data, test_file, load_points_from_stl
 import numpy as np
 import open3d as o3d
 from voxel_custom import Custom_Voxel
+from occupancy_grid import Occupancy_Grid
 
-# test_data, test_labels, test_mask = load_data(test_file)
-# point_cloud = test_data[0]
+test_data, test_labels, test_mask = load_data(test_file)
+point_cloud = test_data[0]
 
-point_cloud = load_points_from_stl("data/tape.stl")
+# point_cloud = load_points_from_stl("data/tape.stl")
 
 
 def get_bounds_along_axis(point_cloud, coord):
@@ -80,7 +81,8 @@ def show_point_cloud_from_grids(grids:list, voxel_size):
     point_clouds = []
     for grid in grids:
         # get point clouds from grid
-        point_clouds.append(get_point_cloud(grid))
+        point_clouds.append(grid.get_point_cloud())
+        # point_clouds.append(get_point_cloud(grid))
 
     # define colors for each point cloud
     colors = np.array([[252, 15, 192], [0, 150, 255]]) / 255
@@ -89,6 +91,8 @@ def show_point_cloud_from_grids(grids:list, voxel_size):
     i=0
     for pc in point_clouds:
         # create open3d point cloud from each list of points and apply a color
+        print(type(pc))
+        print(pc)
         new_pc = o3d.geometry.PointCloud()
         new_pc.points = o3d.utility.Vector3dVector(pc)
         # pc.scale( 1 / np.max(pc.get_max_bound() - pc.get_min_bound()), center = pc.get_center())
@@ -107,14 +111,16 @@ def show_point_cloud_from_grids(grids:list, voxel_size):
 def apply_3d_convolution_filter(occupancy_grid, filter_3d):
     print(f'Applying convolution filter...')
     # new_array = np.zeros(occupancy_grid.shape)
-    num_z_voxels = occupancy_grid.shape[2]
-    num_y_voxels = occupancy_grid.shape[1]
-    num_x_voxels = occupancy_grid.shape[0]
-    new_array = [[[Custom_Voxel(voxel_size) for i in range(num_z_voxels)] for j in range(num_y_voxels)] for k in range(num_x_voxels)]
+    new_occgrid = Occupancy_Grid()
+    new_occgrid.init_grid(occupancy_grid.shape, voxel_size)
+    # num_z_voxels = occupancy_grid.shape[2]
+    # num_y_voxels = occupancy_grid.shape[1]
+    # num_x_voxels = occupancy_grid.shape[0]
+    # new_array = [[[Custom_Voxel(voxel_size) for i in range(num_z_voxels)] for j in range(num_y_voxels)] for k in range(num_x_voxels)]
     filter_size = int((len(filter_3d) - 1) / 2)
-    for i in range(1, len(occupancy_grid)-filter_size):
-        for j in range(1, len(occupancy_grid[i])-filter_size):
-            for k in range(1, len(occupancy_grid[i][j])-filter_size):
+    for i in range(1, occupancy_grid.shape[0]-filter_size):
+        for j in range(1, occupancy_grid.shape[1]-filter_size):
+            for k in range(1, occupancy_grid.shape[2]-filter_size):
                 # l,m,n for iterating through filter
                 value = 0
                 # print('values', occupancy_grid[i-1], occupancy_grid[i], occupancy_grid[i+1])
@@ -134,8 +140,8 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
                     # print(f'value after x{l}: {value}')
                 # print(value)
                 if value != 0:
-                    new_array[i][j][k].add_points(occupancy_grid[i][j][k].point_list)
-                    new_array[i][j][k].value = value
+                    new_occgrid[i][j][k].add_points(occupancy_grid[i][j][k].point_list)
+                    new_occgrid[i][j][k].value = value
                 # exit(0)
 
     # print(new_array)
@@ -145,13 +151,14 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
     # print('newarray', new_array)
     # print(f'edges detected: {(new_array!=0).sum()}')
 
-    return new_array
+    return new_occgrid
 
 # ------ main ----------
 # voxel_size = .015
 voxel_size = .01
 print('creating occupancy grid')
-occupancy_grid = create_occupancy_grid_of_voxels(point_cloud, voxel_size)
+occupancy_grid = Occupancy_Grid(point_cloud, voxel_size)
+# occupancy_grid = create_occupancy_grid_of_voxels(point_cloud, voxel_size)
 print(f'number of voxels: {occupancy_grid.shape}')
 
 # define sobel filters for x, y, z directions
@@ -218,8 +225,8 @@ sobel_x = apply_3d_convolution_filter(occupancy_grid, sobel_3dx_filter)
 #             combined_sobels[i][j][k].value += sobel_z[i][j][k].value
 
 combined_sobels = sobel_x + sobel_y + sobel_z
-combined_sobels = np.add(sobel_x, sobel_y)
-combined_sobels = np.add(combined_sobels, sobel_z)
+# combined_sobels = np.add(sobel_x, sobel_y)
+# combined_sobels = np.add(combined_sobels, sobel_z)
 # threshold = np.max(combined_sobels)*.75
 # combined_sobels = combined_sobels[combined_sobels>=threshold]
 # combined_sobels = np.array(combined_sobels)
