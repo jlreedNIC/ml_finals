@@ -29,14 +29,14 @@ class Occupancy_Grid():
     def init_grid(self, shape, voxel_size):
         self.voxel_size = voxel_size
         self.shape = shape
-        # print(f'Occupancy grid is of size: {self.shape}')
+        print(f'Occupancy grid is of size: {self.shape} with voxel size: {voxel_size}')
 
         # initialize a blank occupancy grid of size shape
         self.grid = [[[Custom_Voxel(self.voxel_size) for i in range(self.shape[2])] for j in range(self.shape[1])] for k in range(self.shape[0])]
     
     def create_occupancy_grid(self, point_cloud, voxel_size):
         # creating occupancy grid from point cloud
-        # print(f'Creating occupancy grid for point cloud...')
+        print(f'Creating occupancy grid for point cloud...')
         # self.voxel_size = voxel_size
         self._get_bounds_point_cloud(point_cloud)
         point_cloud[:,0] -= self._minx
@@ -71,7 +71,8 @@ class Occupancy_Grid():
         for i in range(self.shape[0]):
             for j in range(self.shape[1]):
                 for k in range(self.shape[2]):
-                    point_cloud += self.grid[i][j][k].point_list
+                    if self.grid[i][j][k].value != 0:
+                        point_cloud += self.grid[i][j][k].point_list
         point_cloud = np.array(point_cloud)
         return point_cloud
     
@@ -125,6 +126,15 @@ class Occupancy_Grid():
     def __gt__(self, object):
         return self.grid > object.grid
     
+    def abs(self):
+        # loop through and do sqrt function
+        # np.abs
+        for i in range(self.shape[0]):
+            for j in range(self.shape[1]):
+                for k in range(self.shape[2]):
+                    self.grid[i][j][k].abs()
+        return
+    
         
 
 
@@ -136,20 +146,29 @@ def main():
     # occgrid.create_occupancy_grid(point_cloud)
 
     print(occgrid[0][0][0])
-    occgrid[0][0][0].value = 5
+    occgrid[0][0][0].value = -5
     occgrid[0][1][2].value = 2
     print(occgrid)
 
-    occgrid.threshold_grid(4)
+    # occgrid.threshold_grid(4)
     print(occgrid.shape)
     print(occgrid)
     pc = occgrid.get_point_cloud()
     print(pc)
 
-    maximum = occgrid.maximum()
-    print(maximum)
-    print(type(maximum))
-    print(int(maximum))
+    # maximum = occgrid.maximum()
+    # print(maximum)
+    # print(type(maximum))
+    # print(int(maximum))
+
+    occgrid2 = Occupancy_Grid(np.array([[1,2,3],[5,6,9],[1,2,4],[7,8,9]]), 1)
+
+    occgrid3 = occgrid + occgrid2
+    print(occgrid3)
+
+    occgrid3.abs()
+    print('abs', occgrid3)
+
 
 
 
