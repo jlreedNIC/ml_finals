@@ -74,6 +74,21 @@ class Occupancy_Grid():
                     point_cloud += self.grid[i][j][k].point_list
         point_cloud = np.array(point_cloud)
         return point_cloud
+    
+    def threshold_grid(self, threshold):
+        self.grid[self.grid<=threshold] = Custom_Voxel(self.voxel_size)
+
+    def __str__(self):
+        output = ""
+        for i in range(self.shape[0]):
+            for j in range(self.shape[1]):
+                output += '[ '
+                for k in range(self.shape[2]):
+                    output += f'{self.grid[i][j][k]} '
+                output += "]\n"
+            output += " \n"
+        
+        return output
 
     def _get_bounds_point_cloud(self, point_cloud):
         self._minx = np.min(point_cloud[:,0], axis=0)
@@ -100,6 +115,16 @@ class Occupancy_Grid():
         new_grid.init_grid(self.shape, self.voxel_size)
         new_grid.grid = np.add(self.grid, object.grid)
         return new_grid
+    
+    def maximum(self):
+        return np.max(self.grid)
+    
+    def __lt__(self, object):
+        return self.grid < object.grid
+    
+    def __gt__(self, object):
+        return self.grid > object.grid
+    
         
 
 
@@ -111,6 +136,20 @@ def main():
     # occgrid.create_occupancy_grid(point_cloud)
 
     print(occgrid[0][0][0])
+    occgrid[0][0][0].value = 5
+    occgrid[0][1][2].value = 2
+    print(occgrid)
+
+    occgrid.threshold_grid(4)
+    print(occgrid.shape)
+    print(occgrid)
+    pc = occgrid.get_point_cloud()
+    print(pc)
+
+    maximum = occgrid.maximum()
+    print(maximum)
+    print(type(maximum))
+    print(int(maximum))
 
 
 

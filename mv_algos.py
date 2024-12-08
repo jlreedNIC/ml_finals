@@ -33,8 +33,6 @@ def show_point_cloud_from_grids(grids:list):
     i=0
     for pc in point_clouds:
         # create open3d point cloud from each list of points and apply a color
-        print(type(pc))
-        print(pc)
         new_pc = o3d.geometry.PointCloud()
         new_pc.points = o3d.utility.Vector3dVector(pc)
         new_pc.paint_uniform_color(colors[i])
@@ -126,7 +124,8 @@ sobel_x = apply_3d_convolution_filter(occupancy_grid, sobel_3dx_filter)
 
 
 combined_sobels = sobel_x + sobel_y + sobel_z
+# combined_sobels.threshold_grid(0)
 print(combined_sobels.shape)
 
-show_point_cloud_from_grids([occupancy_grid, combined_sobels], voxel_size)
+show_point_cloud_from_grids([occupancy_grid, combined_sobels])
 
