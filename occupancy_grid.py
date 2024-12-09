@@ -29,15 +29,15 @@ class Occupancy_Grid():
     def init_grid(self, shape, voxel_size):
         self.voxel_size = voxel_size
         self.shape = shape
-        print(f'Occupancy grid is of size: {self.shape} with voxel size: {voxel_size}')
+        # print(f'Occupancy grid is of size: {self.shape} with voxel size: {voxel_size}')
 
         # initialize a blank occupancy grid of size shape
         self.grid = [[[Custom_Voxel(self.voxel_size) for i in range(self.shape[2])] for j in range(self.shape[1])] for k in range(self.shape[0])]
+        self.grid = np.array(self.grid)
     
     def create_occupancy_grid(self, point_cloud, voxel_size):
         # creating occupancy grid from point cloud
-        print(f'Creating occupancy grid for point cloud...')
-        # self.voxel_size = voxel_size
+        # print(f'Creating occupancy grid for point cloud...')
         self._get_bounds_point_cloud(point_cloud)
         point_cloud[:,0] -= self._minx
         point_cloud[:,1] -= self._miny
@@ -68,12 +68,11 @@ class Occupancy_Grid():
 
     def get_point_cloud(self):
         point_cloud = []
-        for i in range(self.shape[0]):
-            for j in range(self.shape[1]):
-                for k in range(self.shape[2]):
-                    if self.grid[i][j][k].value != 0:
-                        point_cloud += self.grid[i][j][k].point_list
-        point_cloud = np.array(point_cloud)
+        point_list = self.grid[self.grid != 0]
+        point_list = np.array(point_list)
+        for vox in point_list:
+            point_cloud += vox.point_list
+        point_cloud=np.array(point_cloud)
         return point_cloud
     
     def threshold_grid(self, threshold):
@@ -161,13 +160,13 @@ def main():
     # print(type(maximum))
     # print(int(maximum))
 
-    occgrid2 = Occupancy_Grid(np.array([[1,2,3],[5,6,9],[1,2,4],[7,8,9]]), 1)
+    # occgrid2 = Occupancy_Grid(np.array([[1,2,3],[5,6,9],[1,2,4],[7,8,9]]), 1)
 
-    occgrid3 = occgrid + occgrid2
-    print(occgrid3)
+    # occgrid3 = occgrid + occgrid2
+    # print(occgrid3)
 
-    occgrid3.abs()
-    print('abs', occgrid3)
+    # occgrid3.abs()
+    # print('abs', occgrid3)
 
 
 
