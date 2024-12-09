@@ -20,8 +20,7 @@ class Custom_Voxel():
     def add_points(self, new_points:list):
         # print(f"Adding points to voxel...")
         if len(new_points) != 0:
-            for pt in new_points:
-                self.point_list.append(pt)
+            self.point_list += new_points
 
             if self.value == 0:
                 self.value = 1
