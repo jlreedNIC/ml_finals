@@ -14,9 +14,13 @@ from voxel_custom import Custom_Voxel
 from occupancy_grid import Occupancy_Grid
 import datetime as dt
 
+# ----------
+# data from test file
 # test_data, test_labels, test_mask = load_data(test_file)
-# point_cloud = test_data[0]
+# ------------
 
+# ---------
+# data from stl file
 point_cloud = load_points_from_stl("data/tape.stl")
 # perform random sampling of object
 indices = np.array(range(len(point_cloud)))
@@ -24,9 +28,15 @@ indices = np.random.choice(indices, 2048, False)
 object_model = point_cloud[indices]
 print(f"from {point_cloud.shape} to {object_model.shape}")
 point_cloud = object_model
+# --------------
 
 
 def show_point_cloud_from_grids(grids:list):
+    """
+    show point clouds from a list of occupancy grids. Gets point clouds and passes to regular point cloud function in data_manip
+
+    :param grids: list of occupancy grids
+    """
     # assuming each grid in grids list is an occupancy grid: 2d numpy array of custom voxels
     point_clouds = []
     for grid in grids:
@@ -35,28 +45,15 @@ def show_point_cloud_from_grids(grids:list):
         point_clouds.append(grid.get_point_cloud())
 
     show_point_clouds(point_clouds)
-    # # define colors for each point cloud
-    # colors = np.array([[0, 150, 255], [252, 15, 192]]) / 255
-
-    # o3d_point_clouds = []
-    # i=0
-    # for pc in point_clouds:
-    #     # create open3d point cloud from each list of points and apply a color
-    #     new_pc = o3d.geometry.PointCloud()
-    #     new_pc.points = o3d.utility.Vector3dVector(pc)
-    #     new_pc.paint_uniform_color(colors[i])
-    #     # colorpc = np.asarray(new_pc.colors)
-    #     # print(colorpc)
-    #     # print(colors[i])
-        
-    #     i += 1
-    #     o3d_point_clouds.append(new_pc)
-    
-    # o3d.visualization.draw_geometries(
-    #     o3d_point_clouds,
-    # )
 
 def apply_3d_convolution_filter(occupancy_grid, filter_3d):
+    """
+    Apply a 3 dimensional convolution filter to the occupancy grid
+
+    :param occupancy_grid: occupancy grid object
+    :param filter_3d: 3d filter, shape (3,m,m)
+    :return: new occupancy grid with values from convolution
+    """
     print(f'Applying convolution filter...')
     
     new_occgrid = Occupancy_Grid()
@@ -83,6 +80,14 @@ def apply_3d_convolution_filter(occupancy_grid, filter_3d):
     return new_occgrid
 
 def find_connected_components(occupancy_grid, cur_index:list, value=2):
+    """
+    perform connected components on pixels. Recursive function. Find all voxels connected to current voxel and assign value to voxel
+
+    :param occupancy_grid: occupancy grid object
+    :param cur_index: index of voxel given in list
+    :param value: value to assign to voxel, defaults to 2
+    :return: the occupancy grid with values changed, the current value being used
+    """
     # check all surrounding 'pixels' in grid for a value of 1
     if occupancy_grid[cur_index[0]][cur_index[1]][cur_index[2]] == 1:
         kernel = 5

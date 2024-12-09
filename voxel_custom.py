@@ -8,7 +8,16 @@
 
 
 class Custom_Voxel():
+    """
+    Voxel has a value for if there is any points in voxel.
+    Keeps track of points with a list. Functions impolemented to perform mathematical operations on voxel value
+    """
     def __init__(self, vox_size=.1):
+        """
+        initialize voxel with size given.
+
+        :param vox_size: size of voxels in grid, defaults to .1
+        """
         # print("initializing voxel...")
 
         self.value = 0
@@ -18,6 +27,11 @@ class Custom_Voxel():
         self.voxel_size = vox_size
     
     def add_points(self, new_points:list):
+        """
+        adds points to the point list for voxel to keep track of. also sets value to 1 if it's 0
+
+        :param new_points: list of 3d points
+        """
         # print(f"Adding points to voxel...")
         if len(new_points) != 0:
             self.point_list += new_points
@@ -27,6 +41,11 @@ class Custom_Voxel():
                 self.isEmpty = False
     
     def remove_points(self, points:list):
+        """
+        Remove points from the voxel point list. Also set value to 0 if no more points in list
+
+        :param points: list of points to remove
+        """
         # print(f"Removing points from voxel...")
         if len(points) != 0:
             for pt in points:
@@ -37,12 +56,16 @@ class Custom_Voxel():
                 self.isEmpty = True
     
     def show_points(self):
+        """
+        Show the points and voxel size
+        """
         print(f'\nPoint List in Voxel of size {self.voxel_size}')
         print(f'-----------------------------------')
         for point in self.point_list:
             print(f'  {point}')
         print()
     
+    # functions implement mathematical operations on value of voxel
     def __str__(self):
         return f'{self.value}'
     
@@ -66,6 +89,12 @@ class Custom_Voxel():
         return self.value
     
     def __add__(self, object):
+        """
+        Combine two voxels together by adding their values and concatenating their point lists
+
+        :param object: voxel object
+        :return: voxel object
+        """
         if type(object) != type(self):
             print(f'Cannot add object type {type(object)} to type {type(self)}')
             exit(1)
@@ -82,6 +111,9 @@ class Custom_Voxel():
         return new_voxel
     
     def abs(self):
+        """
+        set value to absolute value of value
+        """
         self.value = np.abs(self.value)
         return
     
