@@ -124,38 +124,44 @@ class Keras_Custom_Model():
         predictions = self.model.predict(data)
         print(f'pred shape: {predictions.shape}')
         
-        # # -----------
-        # # predictions in pointnet
-        # # shape is (batch, 2048, 16)
-        # predictions = np.reshape(predictions, (2048, 16))
-        # predictions = np.argmax(predictions, axis=-1)
-        # print(f'pred shape: {predictions.shape}')
-        # # print(predictions)
-        # # print('num backgrounds', (predictions==1).sum())
-        # # ----------
+        if "pointnet" in self.model_name:
+            # -----------
+            # predictions in pointnet
+            # shape is (batch, 2048, 16)
+            predictions = np.reshape(predictions, (2048, 16))
+            predictions = np.argmax(predictions, axis=-1)
+            print(f'pred shape: {predictions.shape}')
+            # print(predictions)
+            # print('num backgrounds', (predictions==1).sum())
+            # ----------
+        elif "fcnn" in self.model_name:
+            # ---------
+            # predictions for fcnn
+            # shape (batch, 2048, 2)
+            predictions = np.reshape(predictions, (2048, 2))
+            predictions = np.argmax(predictions, axis=-1)
+            print(f'pred shape: {predictions.shape}')
+            # ------------
+        elif "cnn" in self.model_name:
+            # ------------
+            # for predictions in cnn
+            predictions = np.reshape(predictions, (2048,2,2))
 
-        # ---------
-        # predictions for fcnn
-        # shape (batch, 2048, 2)
-        predictions = np.reshape(predictions, (2048, 2))
-        predictions = np.argmax(predictions, axis=-1)
-        print(f'pred shape: {predictions.shape}')
-        # ------------
-
-        # # ------------
-        # # for predictions in cnn
-        # predictions = np.reshape(predictions, (2048,2,2))
-        # pred = []
-        # for i in range(len(predictions)):
-        #     # fg = (predictions[i][0][1] + predictions[i][1][1]) / 2
-        #     # bg = (predictions[i][0][0] + predictions[i][1][0]) / 2
-        #     fg = predictions[i][1][1]
-        #     bg = predictions[i][1][0]
-        #     p = np.argmax([bg, fg])
-        #     pred.append(p)
-        #     # break
-        # predictions = np.array(pred)
-        # # ---------
+            pred = []
+            for i in range(len(predictions)):
+                # fg = (predictions[i][0][1] + predictions[i][1][1]) / 2
+                # bg = (predictions[i][0][0] + predictions[i][1][0]) / 2
+                fg = predictions[i][1][1]
+                bg = predictions[i][1][0]
+                p = np.argmax([bg, fg])
+                pred.append(p)
+                # break
+            predictions = np.array(pred)
+            # ---------
+        else:
+            print("Unknown model type to run predictions for.")
+            predictions = np.argmax(predictions, axis=-1)
+            print(f'pred shape: {predictions.shape}')
 
         
         print('num backgrounds in prediction', (predictions==1).sum())
