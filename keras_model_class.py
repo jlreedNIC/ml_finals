@@ -8,6 +8,8 @@
 # ------------------------
 
 import keras
+from keras.metrics import Precision, Recall
+from sklearn.metrics import precision_score, recall_score
 import numpy as np
 import os
 
@@ -53,7 +55,7 @@ class Keras_Custom_Model():
         
         self.callback_funcs = [callback_early_stopping, callback_checkpoint]
 
-    def compile_model(self, optimizer='adam', loss=None, metrics=['accuracy']):
+    def compile_model(self, optimizer='adam', loss=None, metrics=['accuracy', Precision(), Recall()]):
         """
         Compile model given parameters
 
@@ -166,6 +168,60 @@ class Keras_Custom_Model():
         
         print('num backgrounds in prediction', (predictions==1).sum())
         return predictions
+
+    def predict_set(self, data, actual_vals):
+        """
+        perform a prediction for a set of objects
+
+        :param data: object data of shape (X, 2048, 3)
+        :return: list of predictions in shape (X, 2048)
+        """
+        print('start')
+        predictions = self.model.predict(data)
+        print(f'pred shape before argmax: {predictions.shape}')
+
+        if "pointnet" in self.model_name:
+            # go from shape (batch, 2048, 16) to (batch, 2048)
+            predictions = np.argmax(predictions, axis=-1)
+        elif "fcnn" in self.model_name:
+            # shape (batch, 2048, 2) to (batch, 2048)
+            # print(predictions)
+            predictions = np.argmax(predictions, axis=-1)
+            print(predictions[predictions!=0])
+            if not np.any(predictions):
+                predictions[0][0] = 1
+            print(predictions)
+            print(actual_vals)
+        elif "cnn" in self.model_name:
+            pred = []
+            for i in range(len(predictions)):
+                fg = predictions[i][1][1]
+                bg = predictions[i][1][0]
+                p = np.argmax([bg, fg])
+                pred.append(p)
+                # break
+            predictions = np.array(pred)
+
+            act = []
+            for i in range(len(actual_vals)):
+                fg = actual_vals[i][1][1]
+                bg = actual_vals[i][1][0]
+                p = np.argmax([bg, fg])
+                act.append(p)
+                # break
+            actual_vals = np.array(act)
+            
+
+        print(f'pred shape: {predictions.shape}')
+        print(f'actual shape: {actual_vals.shape}')
+
+        # calculate precision, recall, f1
+        precision = precision_score(actual_vals, predictions, average='macro', zero_division='warn')
+        recall = recall_score(actual_vals, predictions, average='macro')
+        f1 = 2 * ((precision*recall)/(precision+recall))
+
+        print(f"Precision: {precision:.3f}, Recall: {recall:.3f}")
+        print(f'F1 score: {f1:.3f}')
     
     def custom_CategoricalCrossentropy(self, y_true, y_pred):
         """
@@ -195,4 +251,3 @@ class Keras_Custom_Model():
         loss_val = loss_fn(y_true, pred_prob)
 
         return loss_val
-
