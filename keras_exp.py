@@ -138,7 +138,7 @@ def build_fcnn_model(num_layers:int, num_nodes:list, activation:str, input_size,
     
     return model
 
-def save_data(filename, model_name, scores, parameters):
+def save_data(filename, model_name, scores, parameters, precision, recall):
     """
     save results of experiment to file
 
@@ -154,7 +154,9 @@ def save_data(filename, model_name, scores, parameters):
             f.write(f'{param},')
             if (i-1)%2 == 0:
                 f.write('\n')
-        f.write(f'\nTrain Score,{scores[0]},Test score,{scores[1]},\n')
+        f.write(f'\nTrain Score,{scores[0]},Test score,{scores[1]},')
+        f.write(f'Best Train Recall,{recall[0]},Best Test Recall,{recall[1]},')
+        f.write(f'Best Train Precision,{precision[0]},Best Test Recall,{precision[1]},\n')
 
 # ------ run experiments -------
 train_data, train_label, train_mask, test_data, test_label, test_mask = load_all_data()
@@ -167,20 +169,31 @@ print(train_mask.shape)
 # num_node_layers = [2000 - (i*75) for i in range(0,20)]
 # model = build_fcnn_model(20, num_node_layers,'relu', (2048, 3), 2)
 # model = Keras_Custom_Model(model, "fcnn")
+# loss = None
 # # --------------------
 
-# -----------------
-# build and define cnn model
-train_data, test_data = data_prep_cnn(train_data, test_data)    # expand dims for cnn
-train_onehot_labels = one_hot_encode(train_mask)                # one hot encode train labels
-test_onehot_labels = one_hot_encode(test_mask)                  # one hot encode test labels
+# # -----------------
+# # build and define cnn model
+# train_data, test_data = data_prep_cnn(train_data, test_data)    # expand dims for cnn
+# train_onehot_labels = one_hot_encode(train_mask)                # one hot encode train labels
+# test_onehot_labels = one_hot_encode(test_mask)                  # one hot encode test labels
 
-model = build_cnn_model(
-    2,
-    (2048, 3,1), output_size=2)
-model = Keras_Custom_Model(model, "cnn_onehot_customloss")
-# --------------------
+# model = build_cnn_model(
+#     2,
+#     (2048, 3,1), output_size=2)
+# model = Keras_Custom_Model(model, "cnn_onehot_customloss")
+# loss = None
+# # --------------------
 
+# ----------
+# build pointnet model
+# should not do sparse categorical crossentropy
+# onehot encode labels
+model = build_pointnet_model()
+model = Keras_Custom_Model(model, "pointnet_pr-re")
+train_mask = np.eye(2)[train_mask]
+loss = 'categorical_crossentropy'
+# ----------
 
 
 
@@ -198,17 +211,34 @@ for batch in batch_sizes:
     for epoch in epochs:
         for opt in optimizer:
             # compile model
-            model.compile_model(opt, model.custom_CategoricalCrossentropy)
+            model.compile_model(opt, loss)
             for valid in validation_split:
                 exp_name = f"{model.model_name}_b{batch}_e{epoch}_o{opt}_v{int(valid*100)}"
                 params = ['batch', batch, 'epochs', epoch, 'optimizer', opt, 'validation', valid]
                 print(f'\nNow running model: {exp_name}')
 
                 # train model
-                history = model.train_model(train_data, train_onehot_labels, batch, epoch, valid)
+                # history = model.train_model(train_data, train_onehot_labels, batch, epoch, valid)
+                history = model.train_model(train_data, train_label, batch, epoch, valid)
                 # score model
-                scores = model.score_model(train_data, train_onehot_labels, test_data, test_onehot_labels)
+                # scores = model.score_model(train_data, train_onehot_labels, test_data, test_onehot_labels)
+                scores = model.score_model(train_data, train_label, test_data, test_label)
+
+                # calculate precision and recall
+                best_train_precision = np.max(history.history['precision'])
+                best_train_recall = np.max(history.history['recall'])
+                best_val_precision = np.max(history.history['val_precision'])
+                best_val_recall = np.max(history.history['val_recall'])
+
+                # Print best epoch's values
+                print(f"Best Training Precision: {best_train_precision:.4f}")
+                print(f"Best Training Recall: {best_train_recall:.4f}")
+                print(f"Best Validation Precision: {best_val_precision:.4f}")
+                print(f"Best Validation Recall: {best_val_recall:.4f}")
+
+                precision = [best_train_precision, best_val_precision]
+                recall = [best_train_recall, best_val_recall]
 
                 # save data
-                save_data(f'exp1/{exp_name}.csv', exp_name, scores, params)
+                save_data(f'exp5/{exp_name}.csv', exp_name, scores, params, precision, recall)
 
